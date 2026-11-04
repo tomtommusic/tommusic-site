@@ -97,10 +97,14 @@ footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .spot{width:100%;height:152px;border:0;border-radius:12px;display:block;background:#2a2118}
 .spot-note{margin:10px 0 0;font-size:.8rem;color:var(--cream2);text-align:center}
 
-/* cadre du lecteur Spotify : boîte vintage (double bordure dorée, rivets), et lecteur « mélangé » (lighten)
-   avec un fond brun pour remplacer son gris par la teinte de la boîte */
-.player{position:relative;padding:16px;background:radial-gradient(120% 140% at 30% 0%,#3A2A1A 0%,#241A11 75%);border:1.5px solid var(--gold);box-shadow:inset 0 0 0 5px #1E1710,inset 0 0 0 6.5px rgb(217 164 81/.55),0 14px 30px rgb(0 0 0/.45);isolation:isolate}
+/* cadre du lecteur Spotify : boîte vintage en « cuir », double bordure dorée, rivets et médaillon « Nouveau ».
+   Le lecteur est mélangé (lighten) avec exactement le même brun que l'intérieur de la boîte :
+   son fond et ses coins arrondis disparaissent, il a l'air imprimé dans le cuir. */
+.player{position:relative;margin-top:14px;padding:22px 18px 16px;background:#3A2A1A;
+  background-image:radial-gradient(120% 90% at 50% 0%,rgb(255 220 160/.07),transparent 60%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .23 0 0 0 0 .16 0 0 0 0 .1 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
+  border:1.5px solid var(--gold);box-shadow:inset 0 0 0 5px #2A1E12,inset 0 0 0 6.5px rgb(217 164 81/.6),inset 0 0 26px rgb(0 0 0/.45),0 14px 30px rgb(0 0 0/.5);isolation:isolate}
 .player-win{height:152px;border-radius:12px;overflow:hidden;background:#3A2A1A}
 .player-win iframe{display:block;width:100%;height:152px;mix-blend-mode:lighten}
-.rivet{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F6D9A0,#8A5D22)}
+.rivet{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#F6D9A0,#8A5D22);box-shadow:0 1px 1px rgb(0 0 0/.6)}
 .rivet.tl{top:5px;left:5px}.rivet.tr{top:5px;right:5px}.rivet.bl{bottom:5px;left:5px}.rivet.br{bottom:5px;right:5px}
+.badge{position:absolute;left:50%;top:0;transform:translate(-50%,-55%);background:linear-gradient(180deg,#E3B566,#B9853A);color:#1E1408;padding:6px 14px 5px;font-size:.68rem;letter-spacing:.26em;font-weight:700;border:1px solid #F3D59A;box-shadow:0 3px 8px rgb(0 0 0/.45);white-space:nowrap;z-index:2}
