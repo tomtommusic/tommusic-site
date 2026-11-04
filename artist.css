@@ -31,8 +31,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opa
 @media (max-width:760px){.top .wrap{justify-content:space-between}.top nav{gap:4px 14px;justify-content:flex-start}.top nav a.hide-sm{display:none}.langbtn{margin-left:0}}
 
 /* héros */
-.hero{position:relative;min-height:min(100vh,860px);background:#203029 url(img/route.jpg) 62% 55%/cover no-repeat;display:flex;align-items:center}
-.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.86) 0%,rgb(14 10 6/.6) 38%,rgb(14 10 6/.05) 70%),linear-gradient(0deg,var(--bg) 0%,transparent 22%)}
+.hero{position:relative;min-height:min(100vh,860px);background:#203029 url(img/route.jpg) 62% 88%/cover no-repeat;display:flex;align-items:center}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.86) 0%,rgb(14 10 6/.6) 38%,rgb(14 10 6/.05) 70%),linear-gradient(0deg,var(--bg) 0%,transparent 9%)}
 .hero .wrap{position:relative;padding:120px 0 80px}
 .heroin{max-width:560px;text-align:left}
 .logo{display:flex;align-items:center;gap:18px}
@@ -93,3 +93,6 @@ section.s{padding:84px 0}
 .contact p{color:var(--cream2);margin:0 0 1.3em}
 footer{border-top:1px solid var(--line);padding:28px 0 40px;color:var(--cream2);font-size:.9rem}
 footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+.spot{width:100%;height:152px;border:0;border-radius:12px;display:block;background:#2a2118}
+.spot-note{margin:10px 0 0;font-size:.8rem;color:var(--cream2);text-align:center}
