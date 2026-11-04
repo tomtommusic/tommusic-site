@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr-CA" data-lang="fr" data-langs="fr,en,es" data-default="fr" data-key="musidev-lang" data-title-fr="MusiDev · Formation auditive et théorie musicale" data-title-en="MusiDev · Ear training and music theory" data-title-es="MusiDev · Entrenamiento auditivo y teoría musical">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MusiDev · Formation auditive et théorie musicale</title>
+<meta name="description" content="MusiDev : dictées, lecture, accordeur, accompagnateur et théorie, avec des exercices générés au hasard. Achat unique, aucun abonnement, aucune publicité.">
+<link rel="icon" href="../img/favicon-32.png">
+<link rel="stylesheet" href="../style.css">
+<script src="../lang.js"></script>
+<style>
+.mdhero{position:relative;overflow:hidden;padding:64px 0 72px;background:linear-gradient(180deg,#F3ECE1,var(--paper))}
+.staffbg{position:absolute;left:0;right:0;top:40px;width:100%;height:360px;color:#D9C9B2;opacity:.7}
+.hero2{position:relative;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.brand img{width:64px;height:64px;border-radius:16px}
+.brand h1{font-size:clamp(2.6rem,7vw,3.6rem);margin:0}
+.lead{font-size:1.18rem;margin:0 0 1.5em;max-width:44ch}
+.stores{display:flex;flex-wrap:wrap;gap:10px}
+.tag{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:1.6em 0 .3em}
+.soon{color:var(--muted);font-size:.95rem;margin:0}
+.btn.win{background:var(--ink);color:var(--paper)}
+.btn.win:hover{background:#000}
+.winwarn{margin:1em 0 0;max-width:54ch;background:#FFF6E8;border:1px solid #E7C89A;border-radius:12px;padding:10px 14px;font-size:.9rem}
+.winwarn summary{cursor:pointer;font-weight:700;color:#7A3E12}
+.winwarn p{margin:.6em 0}
+.winwarn ol{margin:.3em 0 .4em;padding-left:1.3em}
+.phone{justify-self:center;width:min(280px,100%);aspect-ratio:9/16.6;border-radius:38px;padding:10px;background:#3A3F46;box-shadow:0 26px 50px rgb(42 32 25/.20),inset 0 0 0 2px #5A616B;transform:rotate(3deg)}
+.splash{position:relative;overflow:hidden;width:100%;height:100%;border-radius:29px;background:linear-gradient(165deg,#FFF9F0 0%,#F3E6D3 45%,#D9EEE7 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink);text-align:center;padding:24px}
+.splash::before{content:"";position:absolute;width:150%;aspect-ratio:1;left:-25%;top:-62%;border-radius:50%;background:radial-gradient(closest-side,rgb(143 211 193/.45),transparent)}
+.splash::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgb(255 255 255/.55) 0%,transparent 28%);pointer-events:none}
+.splash img{position:relative;width:44%;max-width:132px;height:auto;border-radius:24%;box-shadow:0 14px 30px rgb(31 42 48/.28)}
+.splash b{position:relative;font:600 clamp(1.7rem,4vw,2.2rem)/1 Lora,serif;margin-top:8px}
+.splash span{position:relative;font-size:.95rem;color:#2F6B5E;font-weight:700}
+.wave{position:relative;display:flex;gap:5px;align-items:center;height:34px;margin-top:10px}
+.wave i{display:block;width:5px;border-radius:3px;background:#8FD3C1}
+.notes{position:absolute;inset:0;pointer-events:none;color:#C9A57A;font:400 26px/1 serif}
+.notes em{position:absolute;font-style:normal;opacity:.7}
+@media (max-width:760px){.hero2{grid-template-columns:1fr;gap:40px}.phone{width:220px;transform:none}.staffbg{display:none}}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px 32px}
+.feats h3{font-size:1.15rem;margin-bottom:.3em}
+.feats p{margin:0;color:var(--muted)}
+.shots{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 14px;margin-top:40px;scroll-snap-type:x mandatory}
+.shots img{width:210px;flex:none;border-radius:16px;scroll-snap-align:start}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../">TOM</a>
+  <nav class="nav" aria-label="Sections">
+    <a href="#fonctions" class="hide-sm"><span lang="fr">Fonctions</span><span lang="en">Features</span><span lang="es">Funciones</span></a>
+    <a href="soutien.html"><span lang="fr">Soutien</span><span lang="en">Support</span><span lang="es">Soporte</span></a>
+    <button class="langbtn" type="button">EN</button>
+  </nav>
+</div></header>
+<main>
+<section class="mdhero">
+  <svg class="staffbg" viewBox="0 0 1200 400" preserveAspectRatio="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2" fill="none">
+    <path d="M0 120 C300 80 600 170 1200 110"/><path d="M0 145 C300 105 600 195 1200 135"/><path d="M0 170 C300 130 600 220 1200 160"/><path d="M0 195 C300 155 600 245 1200 185"/><path d="M0 220 C300 180 600 270 1200 210"/></g>
+    <g fill="currentColor"><ellipse cx="180" cy="128" rx="13" ry="9" transform="rotate(-20 180 128)"/><ellipse cx="330" cy="160" rx="13" ry="9" transform="rotate(-20 330 160)"/><ellipse cx="900" cy="150" rx="13" ry="9" transform="rotate(-20 900 150)"/><ellipse cx="1040" cy="118" rx="13" ry="9" transform="rotate(-20 1040 118)"/></g></svg>
+  <div class="wrap hero2">
+    <div>
+      <div class="brand"><img src="../img/musidev-icon.png" alt="" width="64" height="64"><h1>MusiDev</h1></div>
+      <p class="lead" lang="fr">Développe ton oreille, apprends à lire la musique et pratique ton instrument, avec des exercices générés au hasard : tu n'apprends jamais les réponses par cœur.</p>
+      <p class="lead" lang="en">Train your ear, learn to read music and practise your instrument with randomly generated exercises: you never just memorise the answers.</p>
+      <p class="lead" lang="es">Desarrolla tu oído, aprende a leer música y practica tu instrumento con ejercicios generados al azar: nunca memorizas las respuestas.</p>
+      <div class="stores">
+        <a class="btn win" href="telecharger/MusiDev-Windows.zip" download><span lang="fr">Télécharger pour Windows</span><span lang="en">Download for Windows</span><span lang="es">Descargar para Windows</span></a>
+        <a class="btn" href="https://apps.apple.com/app/id6827199318"><span lang="fr">Télécharger sur l'App Store</span><span lang="en">Download on the App Store</span><span lang="es">Descargar en el App Store</span></a>
+        <a class="btn" href="https://play.google.com/store/apps/details?id=ca.tomtommusic.musidev"><span lang="fr">Télécharger sur Google Play</span><span lang="en">Get it on Google Play</span><span lang="es">Disponible en Google Play</span></a>
+      </div>
+      <details class="winwarn">
+        <summary><span lang="fr">⚠ Windows affiche un avertissement ? C'est normal.</span><span lang="en">⚠ Windows shows a warning? That's normal.</span><span lang="es">⚠ ¿Windows muestra una advertencia? Es normal.</span></summary>
+        <div lang="fr"><p>MusiDev est créé par un développeur indépendant et n'est pas encore « signé » numériquement (un certificat coûte plusieurs centaines de dollars par année). Windows avertit donc pour tout programme qu'il ne connaît pas encore. Le fichier provient directement de ce site, et l'app ne contient ni publicité ni pistage.</p>
+        <ol><li>Clic droit sur le ZIP &gt; <b>Extraire tout</b>.</li><li>Double-clique sur <b>MusiDev.exe</b>.</li><li>Si « Windows a protégé votre ordinateur » s'affiche : <b>Informations complémentaires</b> &gt; <b>Exécuter quand même</b>.</li></ol></div>
+        <div lang="en"><p>MusiDev is made by an independent developer and isn't digitally “signed” yet (a certificate costs several hundred dollars a year). Windows therefore warns about any program it doesn't know yet. The file comes straight from this site, and the app has no ads and no tracking.</p>
+        <ol><li>Right-click the ZIP &gt; <b>Extract All</b>.</li><li>Double-click <b>MusiDev.exe</b>.</li><li>If “Windows protected your PC” appears: <b>More info</b> &gt; <b>Run anyway</b>.</li></ol></div>
+        <div lang="es"><p>MusiDev es obra de un desarrollador independiente y todavía no está «firmado» digitalmente (un certificado cuesta varios cientos de dólares al año). Por eso Windows advierte sobre cualquier programa que aún no conoce. El archivo viene directamente de este sitio y la app no tiene anuncios ni rastreo.</p>
+        <ol><li>Clic derecho en el ZIP &gt; <b>Extraer todo</b>.</li><li>Doble clic en <b>MusiDev.exe</b>.</li><li>Si aparece «Windows protegió su PC»: <b>Más información</b> &gt; <b>Ejecutar de todas formas</b>.</li></ol></div>
+      </details>
+      <p class="tag"><span lang="fr">Achat unique · Sans abonnement · Sans publicité</span><span lang="en">One-time purchase · No subscription · No ads</span><span lang="es">Pago único · Sin suscripción · Sin anuncios</span></p>
+      <p class="soon"><span lang="fr">iPhone, iPad, Mac, Android et Windows.</span><span lang="en">iPhone, iPad, Mac, Android and Windows.</span><span lang="es">iPhone, iPad, Mac, Android y Windows.</span></p>
+    </div>
+    <div class="phone"><div class="splash"><div class="notes" aria-hidden="true"><em style="left:14%;top:12%">♪</em><em style="right:16%;top:20%;font-size:32px">♫</em><em style="left:18%;bottom:16%;font-size:22px">♩</em><em style="right:14%;bottom:24%">♪</em></div>
+      <img src="../img/musidev-icon.png" alt="" width="140" height="140">
+      <b>MusiDev</b>
+      <span lang="fr">Aussi disponible sur mobile</span><span lang="en">Also available on mobile</span><span lang="es">También disponible en móvil</span>
+      <div class="wave" aria-hidden="true"><i style="height:8px"></i><i style="height:16px"></i><i style="height:26px"></i><i style="height:14px"></i><i style="height:30px"></i><i style="height:20px"></i><i style="height:10px"></i><i style="height:24px"></i><i style="height:32px"></i><i style="height:18px"></i><i style="height:12px"></i><i style="height:22px"></i><i style="height:8px"></i></div>
+    </div></div>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="fonctions">
+  <div class="wrap">
+    <div class="feats">
+      <div><h3><span lang="fr">Entendre</span><span lang="en">Hear</span><span lang="es">Escuchar</span></h3>
+        <p lang="fr">Dictées mélodiques et rythmiques, intervalles, progressions d'accords.</p>
+        <p lang="en">Melodic and rhythmic dictation, intervals, chord progressions.</p>
+        <p lang="es">Dictados melódicos y rítmicos, intervalos, progresiones de acordes.</p></div>
+      <div><h3><span lang="fr">Lire et jouer</span><span lang="en">Read and play</span><span lang="es">Leer y tocar</span></h3>
+        <p lang="fr">Lecture de notes, lecture à vue vérifiée au micro, rythme, solfège, batterie.</p>
+        <p lang="en">Note reading, sight reading checked by the microphone, rhythm, solfège, drums.</p>
+        <p lang="es">Lectura de notas, lectura a primera vista verificada por el micrófono, ritmo, solfeo, batería.</p></div>
+      <div><h3><span lang="fr">Outils</span><span lang="en">Tools</span><span lang="es">Herramientas</span></h3>
+        <p lang="fr">Accordeur, métronome, accompagnateur avec gammes et modes, dictionnaire d'accords.</p>
+        <p lang="en">Tuner, metronome, backing band with scales and modes, chord dictionary.</p>
+        <p lang="es">Afinador, metrónomo, acompañamiento con escalas y modos, diccionario de acordes.</p></div>
+      <div><h3><span lang="fr">Comprendre</span><span lang="en">Understand</span><span lang="es">Comprender</span></h3>
+        <p lang="fr">Une bibliothèque théorique complète et des questionnaires selon ton niveau.</p>
+        <p lang="en">A complete theory library and quizzes at your level.</p>
+        <p lang="es">Una biblioteca teórica completa y cuestionarios según tu nivel.</p></div>
+    </div>
+    <div class="shots" lang="fr" aria-label="Captures"><img src="img/2_dictee.jpg" alt="Dictée mélodique" loading="lazy"><img src="img/3_accordeur.jpg" alt="Accordeur" loading="lazy"><img src="img/4_accomp.jpg" alt="Accompagnateur" loading="lazy"><img src="img/8_batterie.jpg" alt="Lecture batterie" loading="lazy"><img src="img/9_progressions.jpg" alt="Progressions d'accords" loading="lazy"><img src="img/6_biblio.jpg" alt="Bibliothèque théorique" loading="lazy"></div>
+    <div class="shots" lang="en" aria-label="Captures"><img src="img/2_dictee_en.jpg" alt="Melodic dictation" loading="lazy"><img src="img/3_accordeur_en.jpg" alt="Tuner" loading="lazy"><img src="img/4_accomp_en.jpg" alt="Backing band" loading="lazy"><img src="img/8_batterie_en.jpg" alt="Drum reading" loading="lazy"><img src="img/9_progressions_en.jpg" alt="Chord progressions" loading="lazy"><img src="img/6_biblio_en.jpg" alt="Theory library" loading="lazy"></div>
+    <div class="shots" lang="es" aria-label="Captures"><img src="img/2_dictee_es.jpg" alt="Dictado melódico" loading="lazy"><img src="img/3_accordeur_es.jpg" alt="Afinador" loading="lazy"><img src="img/4_accomp_es.jpg" alt="Acompañamiento" loading="lazy"><img src="img/8_batterie_es.jpg" alt="Lectura de batería" loading="lazy"><img src="img/9_progressions_es.jpg" alt="Progresiones de acordes" loading="lazy"><img src="img/6_biblio_es.jpg" alt="Biblioteca teórica" loading="lazy"></div>
+  </div>
+</section>
+<section class="single" aria-label="Run Like a Thief">
+  <div class="wrap single-in">
+    <img src="../img/run-like-a-thief.jpg" alt="Pochette du single Run Like a Thief" width="600" height="600" loading="lazy">
+    <div>
+      <p class="small"><span lang="fr">Le dernier single du créateur de MusiDev</span><span lang="en">The latest single from MusiDev's creator</span><span lang="es">El último sencillo del creador de MusiDev</span></p>
+      <h2>Run Like a Thief · TOM</h2>
+      <div class="btns2">
+        <a class="btn light" href="https://open.spotify.com/artist/5U2HKZJrJyO5o8Vr5p0pm9"><span lang="fr">Écouter sur Spotify</span><span lang="en">Listen on Spotify</span><span lang="es">Escuchar en Spotify</span></a>
+        <a class="btn ghost2" href="https://music.apple.com/ca/artist/tom/1762424938">Apple Music</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">
+  <span><span lang="fr">Aucun compte, aucun pistage.</span><span lang="en">No account, no tracking.</span><span lang="es">Sin cuenta, sin rastreo.</span> <a href="confidentialite.html"><span lang="fr">Confidentialité</span><span lang="en">Privacy</span><span lang="es">Privacidad</span></a> · <a href="soutien.html"><span lang="fr">Soutien</span><span lang="en">Support</span><span lang="es">Soporte</span></a></span>
+  <span>© 2026 <a href="../" style="color:inherit">Tom Tom Music</a></span>
+</div></footer>
+</body>
+</html>
