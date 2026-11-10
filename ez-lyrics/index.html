@@ -370,7 +370,11 @@ const isJunkLine = l => SITE_JUNK.some(r => r.test(l));
 const JUNK = /^\s*(page\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+)\s*$/i;
 
 function convert(text, o){
-  const lines = cleanText(text).split('\n').filter(l => !isJunkLine(l));
+  let lines = cleanText(text).split('\n').filter(l => !isJunkLine(l));
+  // Sites qui dessinent les accords (ex. La Boîte à chansons) : chaque ligne d'accords se copie
+  // comme une ligne faite seulement d'espaces, alors que les vraies séparations sont des lignes vides.
+  { const ws = lines.filter(l => l.length && !l.trim()).length, empty = lines.filter(l => !l.length).length, txt = lines.filter(l => l.trim()).length;
+    if(empty > 0 && ws >= txt * 0.3) lines = lines.filter(l => !(l.length && !l.trim())); }
   const out = []; let i = 0;
   while(i<lines.length && !lines[i].trim()) i++;
   const BYLINE = /^(.*?)\s+(?:by|par)\s+(.+)$/i;
