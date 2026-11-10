@@ -111,6 +111,7 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
 .paper .sec .inst{text-transform:none;letter-spacing:0;font-weight:400;font-style:italic}
 .paper .l{margin:0}
 .paper .gap{height:.6em}
+.paper .block:not(:has(.sec)) + .block:not(:has(.sec)){margin-top:.9em}
 
 /* ---------- Librairie ---------- */
 .lib-meta{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
@@ -183,6 +184,7 @@ a.tab{text-decoration:none}
   .card{border:0;padding:0;background:#fff}
   .paper{box-shadow:none;padding:0}
   body.keep .paper .block{break-inside:avoid;page-break-inside:avoid}
+  body.keep .paper .block.long{break-inside:auto;page-break-inside:auto}
 }
 </style>
 
@@ -329,8 +331,8 @@ Ho_o_oh! Viens danser ce soir
 
 Page 1/1`;
 
-const CHORD = /^[\(\[]?[A-G](#|b|♯|♭)?(m|maj|min|dim|aug|sus|add|M|°|ø|\+)?\d*(sus\d*|add\d*|maj\d*|b\d+|#\d+)*(\/[A-G](#|b)?)?[\*~'!]*[\)\]]?$/;
-const FILLER = /^(\||\/|-|–|x\d+|\d+x|N\.?C\.?|\.{2,}|\*|%)$/i;
+const CHORD = /^[\(\[]?[A-G](#|b|♯|♭)?(m|maj|min|dim|aug|sus|add|M|°|ø|\+)?\d*(sus\d*|add\d*|maj\d*|b\d+|#\d+)*(\((sus|add|maj|min|m|dim|aug|no)?\d*\))?(\/[A-G](#|b|\u266F|\u266D)?)?[\*~'!]*[\)\]]?$/;
+const FILLER = /^(\||\/|-|–|x\d+|\d+x|N\.?C\.?|\([x0-9]{4,6}\)|\.{2,}|\*|%)$/i;
 // Lettres cyrilliques et grecques qui imitent les nôtres (protection anti-copie de certains sites)
 const LOOKALIKE = {'а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x','і':'i','ј':'j','ѕ':'s','һ':'h','ԁ':'d','ɡ':'g',
   'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','У':'Y','І':'I','Ј':'J','Ѕ':'S',
@@ -352,12 +354,22 @@ const UI_JUNK = [
   /^\s*[\d.,]+\s*(views?|vues)(\d|\s|$)/i, /^\s*[\d.,]+\s*(saves?|comments?|commentaires?|ratings?|votes?)\s*$/i,
   /^\s*(author|auteur|difficulty|difficult[ée]|speed|vitesse|tab by|last (edit|update)|derni[eè]re mise [àa] jour|rating)\s*:?/i,
   /^\s*(transpose|transposer|autoscroll|auto ?scroll|simplify|simplifier|font|print|imprimer|edit|report bad tab|add to favou?rites?|favou?rites?|chords?|accords?|strumming pattern|x|\u00D7|\+|-)\s*$/i,
-  /^\s*[+-]?\d+([.,]\d+)?\s*$/
+  /^\s*[+-]?\d+([.,]\d+)?\s*$/,
+  /^\s*(partitions?|paroles et musique|paroles|musique|auteurs?|compositeurs?|interpr[eè]te|accords? utilis[ée]s|tablatures?)\s*:/i,
+  /^\s*([Tt]onalit[ée]|TONALIT[ÉE]|[Kk]ey|KEY)\s*:\s*([A-G][#b]?m?\s*){2,}$/
 ];
+// Lignes de site web : adresse, nom du site, mentions légales
+const SITE_JUNK = [
+  /https?:\/\/|www\./i,
+  /^\s*(la bo[iî]te [àa] chansons|ultimate guitar( tabs)?|ultimate-guitar\.com|boiteachansons\.net)\b.*$/i,
+  /^\s*\S+\.(com|net|ca|org|fr)\s*$/i,
+  /^\s*ce document est r[ée]serv[ée]/i, /^\s*tous droits r[ée]serv[ée]s/i, /^\s*(©|\(c\))\s*\d{4}/i
+];
+const isJunkLine = l => SITE_JUNK.some(r => r.test(l));
 const JUNK = /^\s*(page\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+)\s*$/i;
 
 function convert(text, o){
-  const lines = cleanText(text).split('\n');
+  const lines = cleanText(text).split('\n').filter(l => !isJunkLine(l));
   const out = []; let i = 0;
   while(i<lines.length && !lines[i].trim()) i++;
   const BYLINE = /^(.*?)\s+(?:by|par)\s+(.+)$/i;
@@ -375,7 +387,9 @@ function convert(text, o){
     const clean = s => s.replace(/\s+(chords?|tabs?|tab|ukulele|lyrics|paroles|accords|official|ver\.?\s*\d*)(\s+(chords?|tabs?|ver\.?\s*\d*))*\s*$/i,'').trim();
     const m = lines[i].trim().match(/^(.*?)\s+(?:by|par|-|–)\s+(.+)$/i);
     if(m){ out.push({t:'title',v:clean(m[1])}); out.push({t:'artist',v:clean(m[2])}); }
-    else out.push({t:'title',v:clean(lines[i].trim())});
+    else { const p = lines[i].trim().match(/^(.+?)\s*\(([^()]{2,})\)\s*$/);
+      if(p){ out.push({t:'title',v:clean(p[1])}); out.push({t:'artist',v:clean(p[2])}); }
+      else out.push({t:'title',v:clean(lines[i].trim())}); }
     i++;
   }
   let cur = null;
@@ -384,18 +398,28 @@ function convert(text, o){
     const raw = lines[i];
     if(JUNK.test(raw)) continue;
     if(/^\s*(capo|tuning|accordage|strumming|rythmique)\b/i.test(raw) || UI_JUNK.some(r => r.test(raw))) continue;
+    if(/^\s*accords?\s+(de|pour|[àa] la|du|au)\s+(la\s+)?(guitare|piano|ukul[ée]l[ée]|mandoline|basse|banjo)\s*:?\s*$/i.test(raw)) break;
     if(isChordLine(raw)) continue;
     const s = raw.match(SECTION);
     if(s){ flush(); cur = {t:'sec', name:(s[1]||s[2]).trim(), lines:[]}; continue; }
     if(!cur) cur = {t:'sec', name:null, lines:[]};
-    let l = raw;
+    let l = raw.replace(/\s*\((?:[x0-9]{4,6}|(?:[x0-9]{1,2}[\s\-]){3,5}[x0-9]{1,2})\)\s*/gi, m => /^\s|\s$/.test(m) ? ' ' : '');
+    if(raw.trim() && !l.trim()) continue;
     if(o.und) l = l.replace(/(\S)_(?=\S)/g,'$1').replace(/_/g,'');
     if(o.sp) l = l.trim().replace(/\s{2,}/g,' '); else l = l.replace(/\s+$/,'');
     cur.lines.push(l);
   }
   flush();
   out.forEach(b=>{ if(b.lines){ const L=[]; b.lines.forEach(x=>{ if(x.trim()||(L.length&&L[L.length-1].trim())) L.push(x);}); while(L.length&&!L[L.length-1].trim()) L.pop(); b.lines=L; }});
-  return out;
+  // Sans titres de sections, chaque strophe (séparée par une ligne vide) devient son propre bloc
+  const split = [];
+  for(const b of out){
+    if(b.t !== 'sec' || b.name || !b.lines.includes('')){ split.push(b); continue; }
+    let cur2 = {t:'sec', name:null, lines:[]};
+    for(const x of b.lines){ if(!x.trim()){ if(cur2.lines.length) split.push(cur2); cur2 = {t:'sec', name:null, lines:[]}; } else cur2.lines.push(x); }
+    if(cur2.lines.length) split.push(cur2);
+  }
+  return split;
 }
 
 const $ = id => document.getElementById(id);
@@ -428,7 +452,7 @@ function render(){
     const empty = !b.lines.length;
     if(empty && !o.inst) continue;
     if(empty && !b.name) continue;
-    const box = mk('div','block','');
+    const box = mk('div', b.lines.length > 40 ? 'block long' : 'block','');
     if(b.name){
       const d = mk('div','',''+'',box); const s = mk('div','sec',b.name,d);
       if(empty) mk('span','inst',' · instrumental',s);
@@ -486,7 +510,7 @@ function buildPdf(){
   for(const b of state.sections){
     const empty = !b.lines.length;
     if((empty && !o.inst) || (empty && !b.name)) continue;
-    if(o.keep && y > M + 1 && y + blockHeight(b) > bottom) newPage();
+    { const bh = blockHeight(b); if(o.keep && y > M + 1 && y + bh > bottom && bh <= bottom - M) newPage(); }
     if(b.name){
       const label = pdfSafe(b.name.toUpperCase() + (empty ? '  (instrumental)' : ''));
       const sz = Math.max(9, fs - 3);
@@ -744,12 +768,14 @@ async function guessArtist(force){
   if(!force && key === guessedFor) return;
   guessedFor = key;
   setHint('busy');
-  const prompt = `Identifie l'artiste qui interprète cette chanson. Tu reçois le titre et le début des paroles, extraits d'une feuille d'accords.\nRéponds UNIQUEMENT en JSON : {"artist": "nom exact de l'artiste ou null", "confidence": "high" | "medium" | "low"}.\nSi tu n'es pas raisonnablement sûr, mets artist à null. N'invente jamais un nom.\n\nTitre : ${t}\nParoles :\n${lyr}`;
+  const prompt = `Identifie la chanson et l'artiste qui l'interprète. Tu reçois le titre et le début des paroles, extraits d'une feuille d'accords copiée d'un site web.\nAttention : le « titre » reçu contient parfois le nom de l'artiste collé à la fin, sans espace (ex. « SUR MON ÉPAULELES COWBOYS FRINGANTS » = titre « SUR MON ÉPAULE » + artiste « LES COWBOYS FRINGANTS »).\nRéponds UNIQUEMENT en JSON : {"title": "le vrai titre de la chanson, dans la même casse que reçue", "artist": "nom exact de l'artiste ou null", "confidence": "high" | "medium" | "low"}.\nSi tu n'es pas raisonnablement sûr de l'artiste, mets artist à null. N'invente jamais un nom.\n\nTitre : ${t}\nParoles :\n${lyr}`;
   try{
     const r = await sample.json(prompt, { modelTier: 'quick' });
     if(key !== guessedFor) return;
     if(r && typeof r.artist === 'string' && r.artist.trim() && r.confidence !== 'low'){
       if(!$('f-artist').dataset.touched){
+        const squash = x => norm(x).replace(/[^a-z0-9]/g,'');
+        if(typeof r.title === 'string' && r.title.trim() && !$('f-title').dataset.touched && squash(r.title) !== squash(t) && squash(t).startsWith(squash(r.title)) && squash(t).length > squash(r.title).length){ $('f-title').value = r.title.trim(); }
         $('f-artist').value = r.artist.trim(); artistSource = 'ia'; render();
         setHint('found', r.confidence === 'high' ? 'Artiste reconnu automatiquement. Corrige-le au besoin.' : 'Artiste probable. Vérifie-le avant d’enregistrer.');
       }
