@@ -498,7 +498,9 @@ function seekTo(t) {
 }
 
 /* ================= Mode d'écoute ================= */
-const canCapture = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+// Sur téléphone et tablette, le partage d'écran existe parfois, mais sans le son : l'écoute d'onglet ne peut pas marcher.
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const canCapture = !isMobile && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
 function showCapture(mode) {
   $('capture').hidden = false;
   $('cap-status').textContent = ''; $('cap-status').className = 'status';
@@ -508,10 +510,11 @@ function showCapture(mode) {
   $('o-start').closest('label').hidden = mode !== 'yt';
   $('speed').parentElement.hidden = mode !== 'yt'; $('speed-note').hidden = mode !== 'yt';
   $('howto-tab').textContent = mode === 'yt' ? 'cet onglet (Chart It)' : 'l\'onglet où joue ta chanson';
-  $('listen').disabled = false;
+  $('listen').disabled = false; $('cap-opts').hidden = false;
   if (!file && !canCapture) {
     $('listen').disabled = true;
-    setStatus($('cap-status'), 'Ce navigateur ne permet pas d\'écouter un onglet (c\'est le cas sur iPhone, iPad et Android). Utilise Chrome ou Edge sur un ordinateur, ou ouvre un fichier audio ou vidéo.', 'err');
+    $('cap-opts').hidden = true; $('howto').hidden = true;
+    setStatus($('cap-status'), isMobile ? 'Sur téléphone et tablette, le navigateur ne laisse pas une page capter le son d\'une vidéo. Pour YouTube, utilise Chrome ou Edge sur un ordinateur. Ici, tu peux quand même ouvrir un fichier audio ou vidéo (bouton « Ouvrir un fichier »).' : 'Ce navigateur ne permet pas d\'écouter un onglet. Utilise Chrome ou Edge sur un ordinateur, ou ouvre un fichier audio ou vidéo.', 'err');
   }
 }
 let RATE = 1;
@@ -527,6 +530,7 @@ async function startCapture() {
   if (mode === 'yt' && !ytReady) { setStatus($('cap-status'), 'La vidéo n\'est pas encore prête. Attends une seconde et réessaie.', 'err'); return; }
   const silent = $('o-silent').checked;
   let stream;
+  setStatus($('cap-status'), 'Choisis l\'onglet à partager dans la fenêtre qui vient de s\'ouvrir…');
   try {
     stream = await navigator.mediaDevices.getDisplayMedia({
       video: { displaySurface: 'browser' },
