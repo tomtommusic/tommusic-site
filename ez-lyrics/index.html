@@ -235,6 +235,7 @@ a.tab{text-decoration:none}
             <label><input type="checkbox" id="o-und" checked> Nettoyer les étirements (H_e_y → Hey)</label>
             <label><input type="checkbox" id="o-sp" checked> Enlever les espaces d'alignement</label>
             <label><input type="checkbox" id="o-keep" checked> Garder chaque section sur une seule page</label>
+            <label><input type="checkbox" id="o-auto" checked> Repérer les refrains et couplets quand la partition n'a pas de sections</label>
           </div>
         </div>
 
@@ -419,14 +420,54 @@ function convert(text, o){
     for(const x of b.lines){ if(!x.trim()){ if(cur2.lines.length) split.push(cur2); cur2 = {t:'sec', name:null, lines:[]}; } else cur2.lines.push(x); }
     if(cur2.lines.length) split.push(cur2);
   }
-  return split;
+  if(o.auto === false) return split;
+  return labelSections(split);
+}
+
+// Partition sans titres de sections : repérer le refrain (strophe ou suite de lignes qui revient à l'identique)
+function labelSections(blocks){
+  if(blocks.some(b => b.t === 'sec' && b.name)) return blocks;
+  const head = blocks.filter(b => b.t !== 'sec');
+  let secs = blocks.filter(b => b.t === 'sec' && b.lines.length);
+  const nk = x => x.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  // Une seule grosse strophe (aucune ligne vide) : découper autour du passage répété le plus long
+  if(secs.length === 1 && secs[0].lines.length >= 12){
+    const L = secs[0].lines.filter(x => x.trim()), K = L.map(nk);
+    // Choisir le passage qui couvre le plus de lignes (longueur × nombre de répétitions)
+    const occ = (i, m) => { let c = 0; for(let p = 0; p + m <= K.length;){ let ok = true; for(let q = 0; q < m; q++) if(K[p + q] !== K[i + q]){ ok = false; break; } if(ok){ c++; p += m; } else p++; } return c; };
+    let best = {m:0, i:-1, s:0};
+    for(let i = 0; i < K.length; i++) for(let j = i + 1; j < K.length; j++){
+      if(K[i] !== K[j] || !K[i]) continue;
+      let m = 0; while(j + m < K.length && i + m < j && K[i + m] === K[j + m]) m++;
+      if(m < 3) continue;
+      const s = m * occ(i, m);
+      if(s > best.s || (s === best.s && m > best.m)) best = {m, i, s};
+    }
+    if(best.m >= 3){
+      const C = K.slice(best.i, best.i + best.m), out = []; let cur = [];
+      for(let p = 0; p < L.length;){
+        if(C.every((c, q) => K[p + q] === c)){
+          if(cur.length){ out.push({t:'sec', name:null, lines:cur}); cur = []; }
+          out.push({t:'sec', name:null, lines:L.slice(p, p + C.length)}); p += C.length;
+        } else { cur.push(L[p]); p++; }
+      }
+      if(cur.length) out.push({t:'sec', name:null, lines:cur});
+      secs = out;
+    }
+  }
+  const key = b => b.lines.map(nk).join('|');
+  const count = {}; secs.forEach(b => count[key(b)] = (count[key(b)] || 0) + 1);
+  if(!Object.values(count).some(c => c > 1)) return blocks;
+  let n = 0;
+  secs.forEach(b => { b.name = count[key(b)] > 1 ? 'Refrain' : 'Couplet ' + (++n); });
+  return [...head, ...secs];
 }
 
 const $ = id => document.getElementById(id);
 let state = { sections:[], opts:{}, detected:{title:'',artist:''} };
 let lastSrc = null;
 
-function opts(){ return {inst:$('o-inst').checked, und:$('o-und').checked, sp:$('o-sp').checked, keep:$('o-keep').checked}; }
+function opts(){ return {inst:$('o-inst').checked, und:$('o-und').checked, sp:$('o-sp').checked, keep:$('o-keep').checked, auto:$('o-auto').checked}; }
 function title(){ return $('f-title').value.trim() || 'Sans titre'; }
 function artist(){ return $('f-artist').value.trim(); }
 
@@ -732,7 +773,7 @@ window.addEventListener('hashchange', () => go(location.hash==='#librairie' ? 'l
 $('src').value = SAMPLE;
 $('status').textContent = 'Exemple inventé chargé. Remplace-le par ta partition.';
 $('src').addEventListener('input', () => { if(!$('src').value.trim()){ delete $('f-title').dataset.touched; delete $('f-artist').dataset.touched; } render(); scheduleGuess(); });
-['o-inst','o-und','o-sp','o-keep'].forEach(id => $(id).addEventListener('input', () => { lastSrc = null; render(); }));
+['o-inst','o-und','o-sp','o-keep','o-auto'].forEach(id => $(id).addEventListener('input', () => { lastSrc = null; render(); }));
 ['f-title','f-artist'].forEach(id => $(id).addEventListener('input', e => { e.target.dataset.touched = '1'; render(); if(id==='f-artist') setHint(''); else scheduleGuess(); }));
 
 /* ================= Reconnaissance de l'artiste ================= */
