@@ -11,25 +11,20 @@
 <link rel="stylesheet" href="../artist.css?v=7">
 <script src="../lang.js?v=3"></script>
 <style>
-.ahero{position:relative;background:#203029 url(../img/route.jpg) 62% 70%/cover no-repeat;display:flex;align-items:flex-end;min-height:min(62vh,520px)}
-.ahero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.88) 0%,rgb(14 10 6/.62) 45%,rgb(14 10 6/.2) 80%),linear-gradient(0deg,var(--bg) 0%,transparent 22%)}
-.ahero .wrap{position:relative;padding:130px 0 40px}
-.ahero .kick{color:var(--gold);margin:0 0 14px}
-.ahero h1{margin:0;font:400 clamp(4rem,12vw,7.4rem)/.9 Ultra,Georgia,serif;letter-spacing:.02em;color:var(--cream);filter:url(#rough);text-shadow:0 4px 0 rgb(0 0 0/.35)}
-.ahero .lead{max-width:52ch;margin:22px 0 0;color:var(--cream)}
-.ahero .sign{margin:14px 0 0}
+.ahead{padding:120px 0 0}
+.ahead h1{display:flex;align-items:center;gap:16px;margin:0 0 12px;font:400 clamp(2.4rem,6vw,3.4rem)/1 Ultra,Georgia,serif;letter-spacing:.03em;color:var(--cream)}
+.ahead h1::after{content:"";flex:1;height:1px;background:var(--line)}
+.ahead p{margin:0;color:var(--cream2);max-width:60ch}
 .apps{list-style:none;margin:0;padding:0;display:grid;gap:22px}
 .apps .md{align-items:flex-start;position:relative}
 .apps .md::before{content:"★";position:absolute;right:22px;top:16px;color:var(--gold);font-size:1rem}
 .ico-ez{width:96px;height:96px;border-radius:22px;flex:none;display:grid;place-items:center;background:var(--cream)}
 .ico-ez svg{width:54px;height:54px}
 .apps .meta{color:var(--gold);margin:.2em 0 1.1em;line-height:1.5}
-@media (max-width:760px){.ahero{background-position:70% 50%}.ahero .wrap{padding:110px 0 30px}}
+@media (max-width:760px){.ahead{padding-top:100px}}
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -18 12.6" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></svg>
-
 <header class="top"><div class="wrap">
   <nav class="caps" aria-label="Sections">
     <a href="../"><span lang="fr">Accueil</span><span lang="en">Home</span></a>
@@ -41,19 +36,16 @@
 </div></header>
 
 <main>
-<section class="ahero">
+<section class="ahead">
   <div class="wrap">
-    <p class="caps kick">★ <span lang="fr">Développé par TOM</span><span lang="en">Built by TOM</span> ★</p>
     <h1>Apps</h1>
-    <p class="lead" lang="fr">En plus d'écrire des chansons, je développe des outils pour les musiciens, les chanteurs et les profs de musique. Les voici.</p>
-    <p class="lead" lang="en">Besides writing songs, I build tools for musicians, singers and music teachers. Here they are.</p>
-    <span class="sign">Tom</span>
+    <p lang="fr">Des outils que je développe pour les musiciens, les chanteurs et les profs de musique.</p>
+    <p lang="en">Tools I build for musicians, singers and music teachers.</p>
   </div>
 </section>
 
-<section class="s" style="padding-top:40px">
+<section class="s" style="padding-top:36px">
   <div class="wrap">
-    <h2 class="t"><span class="ttl"><span lang="fr">Mes apps</span><span lang="en">My apps</span></span></h2>
     <ul class="apps">
       <li class="md">
         <img src="../img/musidev-icon.png" alt="" width="96" height="96">
