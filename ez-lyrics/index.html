@@ -354,7 +354,7 @@ const SECTION = /^\s*\[([^\]]+)\]\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-
 const UI_JUNK = [
   /^\s*[\d.,]+\s*(views?|vues)(\d|\s|$)/i, /^\s*[\d.,]+\s*(saves?|comments?|commentaires?|ratings?|votes?)\s*$/i,
   /^\s*(author|auteur|difficulty|difficult[ée]|speed|vitesse|tab by|last (edit|update)|derni[eè]re mise [àa] jour|rating)\s*:?/i,
-  /^\s*(transpose|transposer|autoscroll|auto ?scroll|simplify|simplifier|font|print|imprimer|edit|report bad tab|add to favou?rites?|favou?rites?|chords?|accords?|strumming pattern|x|\u00D7|\+|-)\s*$/i,
+  /^\s*(tempo|bpm|metronome|m[ée]tronome|transpose|transposer|autoscroll|auto ?scroll|simplify|simplifier|font|print|imprimer|edit|report bad tab|add to favou?rites?|favou?rites?|chords?|accords?|strumming pattern|x|\u00D7|\+|-)\s*$/i,
   /^\s*[+-]?\d+([.,]\d+)?\s*$/,
   /^\s*(partitions?|paroles et musique|paroles|musique|auteurs?|compositeurs?|interpr[eè]te|accords? utilis[ée]s|tablatures?)\s*:/i,
   /^\s*([Tt]onalit[ée]|TONALIT[ÉE]|[Kk]ey|KEY)\s*:\s*([A-G][#b]?m?\s*){2,}$/
@@ -389,7 +389,7 @@ function convert(text, o){
   }
   while(i<lines.length && (!lines[i].trim() || lines[i].trim().length<3) && !SECTION.test(lines[i])) i++;
   if(i<lines.length && !SECTION.test(lines[i]) && !isChordLine(lines[i])){
-    const clean = s => s.replace(/\s+(chords?|tabs?|tab|ukulele|lyrics|paroles|accords|official|ver\.?\s*\d*)(\s+(chords?|tabs?|ver\.?\s*\d*))*\s*$/i,'').trim();
+    const clean = s => s.replace(/^\s*(official|officiel(le)?)\s+/i,'').replace(/\s+(chords?|tabs?|tab|ukulele|lyrics|paroles|accords|official|ver\.?\s*\d*)(\s+(chords?|tabs?|ver\.?\s*\d*))*\s*$/i,'').trim();
     const m = lines[i].trim().match(/^(.*?)\s+(?:by|par|-|–)\s+(.+)$/i);
     if(m){ out.push({t:'title',v:clean(m[1])}); out.push({t:'artist',v:clean(m[2])}); }
     else { const p = lines[i].trim().match(/^(.+?)\s*\(([^()]{2,})\)\s*$/);
@@ -402,7 +402,9 @@ function convert(text, o){
   for(; i<lines.length; i++){
     const raw = lines[i];
     if(JUNK.test(raw)) continue;
-    if(/^\s*(capo|tuning|accordage|strumming|rythmique)\b/i.test(raw) || UI_JUNK.some(r => r.test(raw))) continue;
+    // « Tuning: E A D G B EKey: GmCapo: No capo » : garder seulement la tonalité
+    if(/^\s*(capo|tuning|accordage)\b/i.test(raw)){ const km = raw.match(/[Kk]ey\s*:\s*([A-G][#b\u266F\u266D]?m?)/); if(km && cur === null){ out.push({t:'sec', name:null, lines:['Key: ' + km[1]]}); } continue; }
+    if(/^\s*(strumming|rythmique)\b/i.test(raw) || UI_JUNK.some(r => r.test(raw))) continue;
     if(/^\s*accords?\s+(de|pour|[àa] la|du|au)\s+(la\s+)?(guitare|piano|ukul[ée]l[ée]|mandoline|basse|banjo)\s*:?\s*$/i.test(raw)) break;
     if(isChordLine(raw)) continue;
     const s = raw.match(SECTION);
