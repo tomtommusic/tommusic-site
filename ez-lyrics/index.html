@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="EZ Lyrics : colle une feuille d'accords, garde seulement les paroles et les sections pour le chanteur, puis télécharge un PDF propre. Par Tom Tom Music.">
+<link rel="icon" href="../img/favicon-32.png">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<title>EZ Lyrics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: barre latérale fixe (logo + onglets + anneaux violets) et zone principale sombre; sur téléphone la barre devient un bandeau en haut.
+   Style sombre assumé (une seule ambiance), contrastes élevés, aucune info portée par la couleur seule. */
+:root{
+  --bg:#f7f5fc; --side:#fbfaff; --panel:#ffffff; --panel-2:#efe8fd; --line:#e6e0f3; --line-hi:#d2c9ea;
+  --ink:#1d1b34; --muted:#585571; --accent:#7c3aed; --accent-hi:#6427d6; --accent-ink:#ffffff;
+  --ring:rgba(124,58,237,.18); --ring-2:rgba(124,58,237,.07); --hover:#6425d0; --danger:#b4232a; --shadow:rgba(76,45,140,.18);
+  --paper:#ffffff; --paper-ink:#111114; --paper-muted:#45454f;
+  --ui:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --read:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:radial-gradient(900px 600px at 100% 0%, #ece4ff 0%, transparent 60%) fixed, var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
+
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100%}
+/* ---------- Barre latérale ---------- */
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;max-height:100%;background:var(--side);border-right:1px solid var(--line);
+  padding:36px 14px 24px max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:34px;overflow:hidden}
+.side::after{content:"";position:absolute;left:-230px;bottom:-230px;width:460px;height:460px;border-radius:50%;pointer-events:none;
+  background:repeating-radial-gradient(circle at center, var(--ring) 0 52px, var(--ring-2) 52px 104px);
+  -webkit-mask:radial-gradient(circle, #000 0 60%, transparent 72%);mask:radial-gradient(circle, #000 0 60%, transparent 72%)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.brand svg{width:44px;height:44px}
+.brand .word{font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1.1}
+.brand .word b{color:var(--accent-hi);font-weight:800}
+nav{display:grid;gap:6px;position:relative;z-index:1}
+.tab{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:12px;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-align:left;position:relative}
+.tab svg{width:22px;height:22px;flex:none}
+.tab:hover{color:var(--ink);background:var(--panel)}
+.tab[aria-current="page"]{color:var(--accent-hi);background:var(--panel-2)}
+.tab[aria-current="page"]::before{content:"";position:absolute;left:-14px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--accent-hi)}
+.tab .count{margin-left:auto;font-size:12px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--panel-2);color:var(--accent-hi);border:1px solid var(--line-hi);text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- Zone principale ---------- */
+main{min-width:0;padding-block:40px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.view{max-width:1180px;margin:0 auto;display:grid;gap:24px}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.head h1{margin:0;font-weight:800;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.head h1 b{color:var(--accent-hi)}
+.head p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+
+/* Pilule de dépôt (rappel de la barre de recherche du modèle) */
+.pill{box-shadow:0 10px 30px -22px var(--shadow);display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line-hi);border-radius:999px;padding:10px 10px 10px 22px;min-height:62px}
+.pill.over{border-color:var(--accent-hi);background:var(--panel-2)}
+.pill svg.ico{width:22px;height:22px;flex:none;color:var(--muted)}
+.pill .ph{flex:1;min-width:0;color:var(--muted)}
+.pill .ph strong{color:var(--ink);font-weight:600}
+.round{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);border:0;cursor:pointer;position:relative}
+.round svg{width:20px;height:20px}
+.round input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.search{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;outline:none}
+.search::placeholder{color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
+.label{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.5;background:var(--bg);color:var(--ink);
+  border:1px solid var(--line);border-radius:12px;padding:12px}
+.opts{display:grid;gap:8px;font-size:14px}
+.opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;color:var(--ink)}
+.opts input{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:none}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.ahint{font-size:13px;color:var(--muted);min-height:1.2em;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ahint .tag{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--panel-2);color:var(--accent-hi);border:1px solid var(--line-hi)}
+.ahint button{font:inherit;font-size:13px;font-weight:700;color:var(--accent-hi);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+.field input{width:100%;background:var(--bg);border:1px solid var(--line-hi);border-radius:10px;padding:9px 12px;color:var(--ink);font:inherit;font-weight:600}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.size{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-right:auto}
+.size input{accent-color:var(--accent);width:110px}
+.btn{font:inherit;font-weight:700;font-size:14px;border-radius:999px;padding:9px 16px;cursor:pointer;border:1px solid var(--line-hi);background:var(--panel-2);color:var(--ink);
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn svg{width:17px;height:17px}
+.btn:hover{border-color:var(--accent-hi)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--hover)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.small{padding:7px 13px;font-size:13px}
+:is(button,input,textarea,.round):focus-visible{outline:3px solid var(--accent-hi);outline-offset:2px}
+.round:focus-within{outline:3px solid var(--accent-hi);outline-offset:2px}
+.status{font-size:14px;color:var(--muted);min-height:1.3em}
+.status.ok::before{content:"✓ ";color:var(--accent-hi);font-weight:800}
+
+/* Feuille (aperçu papier, comme le PDF) */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:32px 34px;min-height:380px;overflow-wrap:anywhere;font-family:var(--read);line-height:1.55;
+  border:1px solid var(--line);box-shadow:0 18px 40px -26px var(--shadow)}
+.paper .title{font-family:var(--ui);font-weight:800;font-size:1.55em;line-height:1.15;margin:0 0 .15em;letter-spacing:-.01em}
+.paper .artist{color:var(--paper-muted);margin:0 0 1em;font-weight:700}
+.paper .sec{font-family:var(--ui);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:.72em;margin:1.3em 0 .35em;
+  padding:2px 8px;border:1.5px solid var(--paper-ink);border-radius:4px;display:inline-block}
+.paper .sec .inst{text-transform:none;letter-spacing:0;font-weight:400;font-style:italic}
+.paper .l{margin:0}
+.paper .gap{height:.6em}
+
+/* ---------- Librairie ---------- */
+.lib-meta{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.artist-group{display:grid;gap:10px}
+.artist-group h2{margin:0;display:flex;align-items:baseline;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.artist-group h2 span{font-size:13px;color:var(--muted);font-weight:600}
+.files{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.file{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;flex-wrap:wrap}
+.file .doc{width:40px;height:48px;flex:none;border-radius:6px;background:var(--paper);color:var(--paper-ink);display:grid;place-items:end center;border:1px solid var(--line-hi);
+  font-size:10px;font-weight:800;letter-spacing:.05em;padding-bottom:6px;position:relative}
+.file .doc::before{content:"";position:absolute;top:9px;left:8px;right:8px;height:14px;background:repeating-linear-gradient(#c9c9d2 0 2px,transparent 2px 5px)}
+.file .info{flex:1;min-width:180px}
+.file .name{font-weight:700;overflow-wrap:anywhere}
+.file .sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.file .acts{display:flex;gap:8px;flex-wrap:wrap}
+.empty{background:var(--panel);border:1px dashed var(--line-hi);border-radius:18px;padding:36px 24px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.empty strong{color:var(--ink);font-size:17px}
+.note{font-size:13px;color:var(--muted)}
+
+@media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:720px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .side{position:sticky;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+    border-right:0;border-bottom:1px solid var(--line);z-index:5}
+  .side::after{display:none}
+  .brand{flex-direction:row;gap:8px}
+  .brand svg{width:28px;height:28px}
+  .brand .word{font-size:15px}
+  nav{display:flex;margin-left:auto;gap:4px}
+  .tab{padding:8px 10px;font-size:14px;gap:6px}
+  .tab svg{width:18px;height:18px}
+  .tab[aria-current="page"]::before{display:none}
+  .tab .count{display:none}
+  main{padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .paper{padding:22px 18px}
+  .fields{grid-template-columns:1fr}
+  .brand .word span{display:none}
+}
+@media (max-width:360px){ .tab .t{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  :root{--bg:#fff}
+  body{background:#fff}
+  .side,.head,.pill,.grid>.card:first-child,.fiche-top,#v-lib{display:none!important}
+  .app,.grid{display:block}
+  main{padding:0}
+  .card{border:0;padding:0;background:#fff}
+  .paper{box-shadow:none;padding:0}
+  body.keep .paper .block{break-inside:avoid;page-break-inside:avoid}
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9f7aea"/><stop offset="1" stop-color="#6d3be0"/></linearGradient></defs>
+        <path fill="url(#g)" d="M40 5.5v26.2a7 7 0 1 1-4-6.3V14.6l-18 4v17.1a7 7 0 1 1-4-6.3V10.2a2 2 0 0 1 1.6-2L37.6 3.5A2 2 0 0 1 40 5.5z"/></svg>
+      <div class="word"><b>EZ</b> Lyrics</div>
+    </div>
+    <nav aria-label="Sections">
+      <button class="tab" id="t-conv" data-view="convertir" aria-current="page" aria-label="Convertir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+        <span class="t">Convertir</span></button>
+      <button class="tab" id="t-lib" data-view="librairie" aria-label="Librairie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
+    </nav>
+    <a class="tab" href="../" style="margin-top:auto;position:relative;z-index:1;text-decoration:none" aria-label="Retour à tommusic.ca">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="t">tommusic.ca</span></a>
+  </aside>
+
+  <main>
+    <!-- ================= CONVERTIR ================= -->
+    <section class="view" id="v-conv" aria-labelledby="h-conv">
+      <div class="head">
+        <div>
+          <h1 id="h-conv">Convertir une <b>partition</b></h1>
+          <p>Colle une feuille d'accords ou dépose un fichier. Les accords disparaissent; il reste les sections et les paroles, prêtes à chanter.</p>
+        </div>
+      </div>
+
+      <div class="pill" id="drop">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <div class="ph"><strong>Dépose un PDF ou un fichier texte ici</strong>, ou colle le texte plus bas.</div>
+        <label class="round" title="Choisir un fichier"><input type="file" id="file" accept=".pdf,.txt,.cho,.chopro,text/plain,application/pdf" aria-label="Choisir un fichier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></label>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <p class="label">Texte source</p>
+          <textarea id="src" spellcheck="false" aria-label="Texte de la partition"></textarea>
+          <div class="opts">
+            <label><input type="checkbox" id="o-inst" checked> Indiquer les sections instrumentales</label>
+            <label><input type="checkbox" id="o-und" checked> Nettoyer les étirements (H_e_y → Hey)</label>
+            <label><input type="checkbox" id="o-sp" checked> Enlever les espaces d'alignement</label>
+            <label><input type="checkbox" id="o-keep" checked> Garder chaque section sur une seule page</label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="fiche-top" style="display:grid;gap:14px">
+            <div class="fields">
+              <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
+              <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+            </div>
+            <div class="ahint" id="artist-hint" aria-live="polite"></div>
+            <div class="toolbar">
+              <div class="size"><label for="fs">Taille</label><input type="range" id="fs" min="14" max="32" value="19"></div>
+              <button class="btn small" id="copy">Copier</button>
+              <button class="btn small" id="print" hidden onclick="window.print()">Imprimer</button>
+              <button class="btn small" id="pdf" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>PDF</button>
+              <button class="btn small primary" id="save">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
+            </div>
+            <div class="status" id="status" role="status"></div>
+          </div>
+          <div class="paper" id="sheet"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LIBRAIRIE ================= -->
+    <section class="view" id="v-lib" aria-labelledby="h-lib" hidden>
+      <div class="head">
+        <div>
+          <h1 id="h-lib">Librairie</h1>
+          <p class="lib-meta" id="lib-meta">Chargement…</p>
+        </div>
+      </div>
+      <div class="pill">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input class="search" id="q" type="search" placeholder="Chercher une chanson ou un artiste…" aria-label="Chercher dans la librairie">
+      </div>
+      <div class="status" id="lib-status" role="status"></div>
+      <div id="lib" style="display:grid;gap:28px"></div>
+      <p class="note" id="lib-where"></p>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/* ================= Conversion ================= */
+const SAMPLE = `Petite chanson d'exemple by Les Inventés
+
+[Intro]
+G5 D5 E5 C5 G5 D5 E5 C5
+
+[Verse 1]
+G5          D5           E5
+  Le soleil tombe sur la ville
+C5            G5          D5
+  Je marche seul sur le trottoir
+E5            C5
+On chante fort, on reste tranquille
+
+[Chorus]
+G5   D5     E5    C5
+Ho_o_oh! Viens danser ce soir
+G5   D5     E5    C5
+Ho_o_oh! Tout le monde en noir
+
+[Solo]
+E5 C5 G5 D5 E5 C5 G5 D5
+
+[Chorus]
+G5   D5     E5    C5
+Ho_o_oh! Viens danser ce soir
+
+Page 1/1`;
+
+const CHORD = /^[\(\[]?[A-G](#|b|♯|♭)?(m|maj|min|dim|aug|sus|add|M|°|ø|\+)?\d*(sus\d*|add\d*|maj\d*|b\d+|#\d+)*(\/[A-G](#|b)?)?[\*~'!]*[\)\]]?$/;
+const FILLER = /^(\||\/|-|–|x\d+|\d+x|N\.?C\.?|\.{2,}|\*|%)$/i;
+// Lettres cyrilliques et grecques qui imitent les nôtres (protection anti-copie de certains sites)
+const LOOKALIKE = {'а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x','і':'i','ј':'j','ѕ':'s','һ':'h','ԁ':'d','ɡ':'g',
+  'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','У':'Y','І':'I','Ј':'J','Ѕ':'S',
+  'ο':'o','α':'a','ε':'e','ν':'v','ρ':'p','Α':'A','Β':'B','Ε':'E','Η':'H','Ι':'I','Κ':'K','Μ':'M','Ν':'N','Ο':'O','Ρ':'P','Τ':'T','Χ':'X','Υ':'Y','Ζ':'Z'};
+function cleanText(t){
+  return t.normalize('NFC')
+    .replace(/[​-‍⁠﻿­]/g,'')
+    .replace(/[Ͱ-ϿЀ-ӿԀ-ԯɡ]/g, c => LOOKALIKE[c] || c)
+    .replace(/ /g,' ')
+    .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'$1')
+    .replace(/^\s*```.*$/gm,'')
+    .replace(/\r/g,'');
+}
+const isChordLine = l => { const t = l.trim().split(/\s+/).filter(Boolean); return t.length>0 && t.every(w=>CHORD.test(w)||FILLER.test(w)) && t.some(w=>CHORD.test(w)); };
+const SECTION = /^\s*\[([^\]]+)\]\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-?chorus|pr[ée]-?refrain|chorus|refrain|bridge|pont|solo|outro|interlude|instrumental|break|coda)\b[^a-z]*$/i;
+const JUNK = /^\s*(page\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+)\s*$/i;
+
+function convert(text, o){
+  const lines = cleanText(text).split('\n');
+  const out = []; let i = 0;
+  while(i<lines.length && !lines[i].trim()) i++;
+  const BYLINE = /^(.*?)\s+(?:by|par)\s+(.+)$/i;
+  for(let k=i, seen=0, prev=-1; k<lines.length && seen<8; k++){
+    if(!lines[k].trim()) continue;
+    if(SECTION.test(lines[k])) break;
+    seen++;
+    if(/^(by|par)$/i.test(lines[k].trim()) && prev>=0){ let n=k+1; while(n<lines.length && !lines[n].trim()) n++; if(n<lines.length){ lines[n] = lines[prev].trim() + ' by ' + lines[n].trim(); i = n; break; } }
+    if(/^(by|par)\s+\S/i.test(lines[k].trim()) && prev>=0){ lines[k] = lines[prev].trim() + ' ' + lines[k].trim(); i = k; break; }
+    if(BYLINE.test(lines[k].trim())){ i = k; break; }
+    prev = k;
+  }
+  while(i<lines.length && (!lines[i].trim() || lines[i].trim().length<3) && !SECTION.test(lines[i])) i++;
+  if(i<lines.length && !SECTION.test(lines[i]) && !isChordLine(lines[i])){
+    const clean = s => s.replace(/\s+(chords?|tabs?|tab|ukulele|lyrics|paroles|accords|official|ver\.?\s*\d*)(\s+(chords?|tabs?|ver\.?\s*\d*))*\s*$/i,'').trim();
+    const m = lines[i].trim().match(/^(.*?)\s+(?:by|par|-|–)\s+(.+)$/i);
+    if(m){ out.push({t:'title',v:clean(m[1])}); out.push({t:'artist',v:clean(m[2])}); }
+    else out.push({t:'title',v:clean(lines[i].trim())});
+    i++;
+  }
+  let cur = null;
+  const flush = () => { if(cur){ out.push(cur); cur=null; } };
+  for(; i<lines.length; i++){
+    const raw = lines[i];
+    if(JUNK.test(raw)) continue;
+    if(/^\s*(capo|tuning|accordage|strumming|rythmique)\b/i.test(raw)) continue;
+    if(isChordLine(raw)) continue;
+    const s = raw.match(SECTION);
+    if(s){ flush(); cur = {t:'sec', name:(s[1]||s[2]).trim(), lines:[]}; continue; }
+    if(!cur) cur = {t:'sec', name:null, lines:[]};
+    let l = raw;
+    if(o.und) l = l.replace(/(\S)_(?=\S)/g,'$1').replace(/_/g,'');
+    if(o.sp) l = l.trim().replace(/\s{2,}/g,' '); else l = l.replace(/\s+$/,'');
+    cur.lines.push(l);
+  }
+  flush();
+  out.forEach(b=>{ if(b.lines){ const L=[]; b.lines.forEach(x=>{ if(x.trim()||(L.length&&L[L.length-1].trim())) L.push(x);}); while(L.length&&!L[L.length-1].trim()) L.pop(); b.lines=L; }});
+  return out;
+}
+
+const $ = id => document.getElementById(id);
+let state = { sections:[], opts:{}, detected:{title:'',artist:''} };
+let lastSrc = null;
+
+function opts(){ return {inst:$('o-inst').checked, und:$('o-und').checked, sp:$('o-sp').checked, keep:$('o-keep').checked}; }
+function title(){ return $('f-title').value.trim() || 'Sans titre'; }
+function artist(){ return $('f-artist').value.trim(); }
+
+function render(){
+  const o = opts();
+  const src = $('src').value;
+  if(src !== lastSrc){
+    const blocks = convert(src, o);
+    const t = blocks.find(b=>b.t==='title'), a = blocks.find(b=>b.t==='artist');
+    // Remplir titre/artiste si l'utilisateur ne les a pas modifiés lui-même
+    if(!$('f-title').dataset.touched) $('f-title').value = t ? t.v : '';
+    if(!$('f-artist').dataset.touched) $('f-artist').value = a ? a.v : '';
+    lastSrc = src;
+  }
+  state.sections = convert(src, o).filter(b=>b.t==='sec');
+  state.opts = o;
+  document.body.classList.toggle('keep', o.keep);
+  const el = $('sheet'); el.textContent='';
+  const mk = (tag, cls, txt, parent) => { const n=document.createElement(tag); n.className=cls; n.textContent=txt; (parent||el).appendChild(n); return n; };
+  mk('h2','title', title());
+  if(artist()) mk('p','artist', artist());
+  for(const b of state.sections){
+    const empty = !b.lines.length;
+    if(empty && !o.inst) continue;
+    if(empty && !b.name) continue;
+    const box = mk('div','block','');
+    if(b.name){
+      const d = mk('div','',''+'',box); const s = mk('div','sec',b.name,d);
+      if(empty) mk('span','inst',' · instrumental',s);
+    }
+    for(const l of b.lines){ if(l.trim()) mk('p','l',l,box); else mk('div','gap','',box); }
+  }
+}
+function plainText(){
+  const o = state.opts, out = [title().toUpperCase()];
+  if(artist()) out.push(artist());
+  out.push('');
+  for(const b of state.sections){
+    const empty = !b.lines.length;
+    if((empty && !o.inst) || (empty && !b.name)) continue;
+    if(b.name) out.push(`[${b.name}]${empty?' (instrumental)':''}`);
+    out.push(...b.lines, '');
+  }
+  return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
+/* ================= PDF ================= */
+const WINANSI_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+const pdfSafe = s => s.normalize('NFC').replace(/./gu, c => (c.charCodeAt(0) < 256 || WINANSI_EXTRA.includes(c)) ? c : (c.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\x00-\xFF]/g,'') || ''));
+function fileName(t, a){
+  const clean = s => s.replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,' ').trim();
+  return (a ? clean(a) + ' - ' : '') + (clean(t) || 'Sans titre') + ' (chanteur).pdf';
+}
+function buildPdf(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const T = title(), A = artist();
+  doc.setProperties({ title: pdfSafe(T + (A ? ' - ' + A : '')), author: pdfSafe(A || ''), subject: 'EZ Lyrics - paroles pour le chanteur', creator: 'EZ Lyrics' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  const M = 54, FOOT = 30, maxW = W - 2*M, bottom = H - M - FOOT/2;
+  const fs = Math.round(+$('fs').value * 0.75);
+  const o = state.opts;
+  let y = M;
+  const newPage = () => { doc.addPage(); y = M; };
+  const need = h => { if(y + h > bottom) newPage(); };
+  const write = (txt, size, style, gapAfter) => {
+    doc.setFont('helvetica', style); doc.setFontSize(size);
+    const lh = size * 1.35;
+    for(const part of doc.splitTextToSize(pdfSafe(txt), maxW)){ need(lh); doc.text(part, M, y + size); y += lh; }
+    y += gapAfter || 0;
+  };
+  const secH = Math.max(9, fs - 3) * 1.7;
+  const blockHeight = b => {
+    doc.setFont('helvetica','normal'); doc.setFontSize(fs);
+    let h = 4; if(b.name) h += secH + 12;
+    for(const l of b.lines) h += l.trim() ? doc.splitTextToSize(pdfSafe(l), maxW).length * fs * 1.35 : fs * 0.6;
+    return h;
+  };
+  write(T, fs + 10, 'bold', 2);
+  if(A) write(A, fs, 'normal', 10); else y += 8;
+  for(const b of state.sections){
+    const empty = !b.lines.length;
+    if((empty && !o.inst) || (empty && !b.name)) continue;
+    if(o.keep && y > M + 1 && y + blockHeight(b) > bottom) newPage();
+    if(b.name){
+      const label = pdfSafe(b.name.toUpperCase() + (empty ? '  (instrumental)' : ''));
+      const sz = Math.max(9, fs - 3);
+      need(secH + (empty ? 0 : fs * 1.35)); y += 6;
+      doc.setFont('helvetica','bold'); doc.setFontSize(sz);
+      const w = doc.getTextWidth(label) + 12;
+      doc.setLineWidth(1); doc.rect(M, y, w, secH);
+      doc.text(label, M + 6, y + secH/2 + sz*0.35);
+      y += secH + 6;
+    }
+    for(const l of b.lines){ if(l.trim()) write(l, fs, 'normal'); else y += fs * 0.6; }
+    y += 4;
+  }
+  // Pied de page : identification sur chaque page
+  const n = doc.getNumberOfPages();
+  for(let p=1; p<=n; p++){
+    doc.setPage(p); doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90);
+    const left = pdfSafe(T + (A ? ' — ' + A : ''));
+    doc.text(doc.splitTextToSize(left, maxW - 70)[0], M, H - 30);
+    doc.text(`Page ${p}/${n}`, W - M, H - 30, {align:'right'});
+    doc.setTextColor(0);
+  }
+  return { doc, pages:n };
+}
+function b64ToBlob(b64){ const bin = atob(b64), u = new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new Blob([u],{type:'application/pdf'}); }
+
+/* ================= Téléchargements ================= */
+let downloads = null;
+async function saveFile(name, blob, statusEl){
+  if(!downloads){
+    if(window.claude){ statusEl.className='status'; statusEl.textContent = "Le téléchargement n'est pas disponible dans cette vue."; return; }
+    // Hors de Claude (ex. sur tommusic.ca) : téléchargement normal du navigateur
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    statusEl.className='status ok'; statusEl.textContent = `« ${name} » téléchargé.`; return;
+  }
+  try{ await downloads.save({ filename: name, data: blob }); statusEl.className='status ok'; statusEl.textContent = `« ${name} » téléchargé.`; }
+  catch(e){
+    if(e && e.code === 'declined') return;
+    statusEl.className='status';
+    statusEl.textContent = e && e.code === 'rate_limited' ? 'Une demande est déjà ouverte. Réessaie dans un instant.' : "Le téléchargement n'a pas fonctionné ici. Réessaie plus tard.";
+  }
+}
+
+/* ================= Librairie (stockage) ================= */
+const LS_KEY = 'feuille-chanteur-librairie';
+const store = {
+  kind:'local', items:[], col:null,
+  async init(){
+    let db = null, user = null, uid = null;
+    try{ [db, user] = await Promise.all([window.claude?.use?.('db'), window.claude?.use?.('user')]); uid = user ? await user.id() : null; }catch(e){}
+    if(db && uid){
+      this.kind = 'db'; this.col = db.collection('data/users/' + uid);
+      const timer = setTimeout(()=>{ if(!this.loaded){ $('lib-meta').textContent = 'La librairie tarde à répondre…'; } }, 10000);
+      this.col.onSnapshot(snap => {
+        clearTimeout(timer); this.loaded = true;
+        this.items = snap.docs.map(d => ({id:d.id, ...d.data()})).filter(x => x.kind === 'sheet');
+        renderLib();
+      }, err => { clearTimeout(timer); $('lib-meta').textContent = "Impossible de lire la librairie pour l'instant."; });
+      $('lib-where').textContent = 'Ta librairie est enregistrée dans ton compte Claude : tu la retrouves sur tous tes appareils. Elle est privée.';
+    } else {
+      this.kind = 'local'; this.loaded = true;
+      try{ this.items = JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }catch(e){ this.items = []; }
+      $('lib-where').textContent = 'Ta librairie est gardée dans ce navigateur seulement.';
+      renderLib();
+    }
+  },
+  saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(this.items)); return true; }catch(e){ return false; } },
+  async put(item){
+    const same = this.items.find(x => norm(x.title)===norm(item.title) && norm(x.artist)===norm(item.artist));
+    if(this.kind === 'db'){
+      if(same) await this.col.doc(same.id).set(item); else await this.col.add(item);
+    } else {
+      if(same) Object.assign(same, item); else this.items.push({id:'l'+Date.now().toString(36), ...item});
+      if(!this.saveLocal()) throw {code:'quota'};
+      renderLib();
+    }
+    return !!same;
+  },
+  async remove(id){
+    if(this.kind === 'db') await this.col.doc(id).delete();
+    else { this.items = this.items.filter(x=>x.id!==id); this.saveLocal(); renderLib(); }
+  }
+};
+const norm = s => (s||'').toLocaleLowerCase('fr').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+
+async function saveToLibrary(){
+  const st = $('status');
+  if(!window.jspdf){ st.className='status'; st.textContent = "Le générateur de PDF n'a pas pu se charger. Recharge la page."; return; }
+  if(!state.sections.some(b=>b.lines.length)){ st.className='status'; st.textContent = 'Aucune parole à enregistrer. Colle une partition d’abord.'; return; }
+  if(!$('f-title').value.trim()){ st.className='status'; st.textContent = 'Donne un titre à la chanson avant de l’enregistrer.'; $('f-title').focus(); return; }
+  const { doc, pages } = buildPdf();
+  const b64 = doc.output('datauristring').split(',')[1];
+  const item = { kind:'sheet', title:title(), artist:artist(), filename:fileName(title(), artist()), pages, bytes: Math.round(b64.length*3/4), savedAt: Date.now(), pdf: b64 };
+  $('save').disabled = true;
+  try{
+    const replaced = await store.put(item);
+    st.className='status ok';
+    st.textContent = `« ${item.filename} » ${replaced ? 'remplacé' : 'ajouté'} dans la librairie.`;
+  }catch(e){
+    st.className='status';
+    st.textContent = e && (e.code==='quota' || e.code==='quota_exceeded') ? 'La librairie est pleine. Supprime quelques partitions puis réessaie.'
+      : e && (e.code==='not_granted' || e.code==='forbidden') ? "Tu n'as pas la permission d'enregistrer ici." : "L'enregistrement n'a pas fonctionné. Réessaie.";
+  }finally{ $('save').disabled = false; }
+}
+
+/* ================= Librairie (affichage) ================= */
+const fmtDate = ts => new Date(ts).toLocaleDateString('fr-CA',{day:'numeric',month:'short',year:'numeric'});
+const fmtSize = b => b < 1024*1024 ? Math.max(1,Math.round(b/1024)) + ' Ko' : (b/1048576).toFixed(1).replace('.',',') + ' Mo';
+function renderLib(){
+  const items = store.items;
+  $('lib-count').textContent = items.length;
+  if(!store.loaded){ $('lib-meta').textContent = 'Chargement de la librairie…'; $('lib').textContent = ''; return; }
+  const artistsAll = new Set(items.map(x=>norm(x.artist)||'~'));
+  $('lib-meta').textContent = items.length ? `${items.length} partition${items.length>1?'s':''} · ${artistsAll.size} artiste${artistsAll.size>1?'s':''}` : 'Aucune partition pour l’instant';
+  const q = norm($('q').value);
+  const list = items.filter(x => !q || norm(x.title).includes(q) || norm(x.artist).includes(q));
+  const box = $('lib'); box.textContent = '';
+  if(!items.length || !list.length){
+    const e = document.createElement('div'); e.className = 'empty';
+    if(!items.length){
+      e.innerHTML = '<strong>Ta librairie est vide</strong><span>Convertis une partition, puis clique sur « Enregistrer dans la librairie ». Le PDF apparaîtra ici, classé par artiste.</span>';
+      const b = document.createElement('button'); b.className='btn primary'; b.textContent='Convertir une partition'; b.onclick=()=>go('convertir'); e.appendChild(b);
+    } else { e.innerHTML = '<strong>Aucun résultat</strong><span>Aucune chanson ni artiste ne correspond à ta recherche.</span>'; }
+    box.appendChild(e); return;
+  }
+  const groups = new Map();
+  for(const it of list){ const k = it.artist || 'Artiste inconnu'; if(!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
+  const keys = [...groups.keys()].sort((a,b)=> (a==='Artiste inconnu') - (b==='Artiste inconnu') || a.localeCompare(b,'fr',{sensitivity:'base'}));
+  for(const k of keys){
+    const songs = groups.get(k).sort((a,b)=>a.title.localeCompare(b.title,'fr',{sensitivity:'base'}));
+    const g = document.createElement('section'); g.className='artist-group';
+    const h = document.createElement('h2'); h.textContent = k; const c = document.createElement('span'); c.textContent = songs.length + (songs.length>1?' chansons':' chanson'); h.appendChild(c); g.appendChild(h);
+    const ul = document.createElement('ul'); ul.className='files';
+    for(const it of songs){
+      const li = document.createElement('li'); li.className='file';
+      li.innerHTML = '<div class="doc" aria-hidden="true">PDF</div><div class="info"><div class="name"></div><div class="sub"></div></div><div class="acts"></div>';
+      li.querySelector('.name').textContent = it.filename;
+      li.querySelector('.sub').textContent = `${it.title} · ${it.pages} page${it.pages>1?'s':''} · ${fmtSize(it.bytes||0)} · enregistré le ${fmtDate(it.savedAt)}`;
+      const acts = li.querySelector('.acts');
+      const dl = document.createElement('button'); dl.className='btn small primary';
+      dl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>Télécharger';
+      dl.setAttribute('aria-label', 'Télécharger ' + it.filename);
+      dl.onclick = () => saveFile(it.filename, b64ToBlob(it.pdf), $('lib-status'));
+      if(!downloads && window.claude) dl.hidden = true;
+      const del = document.createElement('button'); del.className='btn small'; del.textContent='Supprimer'; del.setAttribute('aria-label','Supprimer ' + it.filename);
+      del.onclick = () => {
+        acts.textContent = '';
+        const yes = document.createElement('button'); yes.className='btn small danger'; yes.textContent='Oui, supprimer';
+        const no = document.createElement('button'); no.className='btn small'; no.textContent='Annuler';
+        yes.onclick = async () => { yes.disabled = true; try{ await store.remove(it.id); $('lib-status').className='status ok'; $('lib-status').textContent = `« ${it.filename} » supprimé.`; }catch(e){ $('lib-status').className='status'; $('lib-status').textContent = 'La suppression n’a pas fonctionné. Réessaie.'; renderLib(); } };
+        no.onclick = () => renderLib();
+        acts.append(yes, no); yes.focus();
+      };
+      acts.append(dl, del);
+      ul.appendChild(li);
+    }
+    g.appendChild(ul); box.appendChild(g);
+  }
+}
+
+/* ================= Lecture de fichiers ================= */
+async function readPdf(file){
+  const lib = window.pdfjsLib;
+  if(!lib) throw new Error("Le lecteur PDF n'a pas pu se charger. Copie le texte du PDF et colle-le dans la zone Texte source.");
+  lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await lib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  const out = [];
+  for(let p=1;p<=pdf.numPages;p++){
+    const c = await (await pdf.getPage(p)).getTextContent();
+    const rows = [];
+    for(const it of c.items){
+      if(!it.str) continue;
+      const y = it.transform[5], x = it.transform[4];
+      let r = rows.find(r=>Math.abs(r.y-y)<3);
+      if(!r){ r={y,items:[]}; rows.push(r); }
+      r.items.push({x, s:it.str, w:it.width});
+    }
+    rows.sort((a,b)=>b.y-a.y);
+    let prevY = null;
+    for(const r of rows){
+      if(prevY!==null && prevY - r.y > 22) out.push('');
+      r.items.sort((a,b)=>a.x-b.x);
+      let line='', end=null;
+      for(const it of r.items){ if(end!==null && it.x-end>2 && !/\s$/.test(line) && !/^\s/.test(it.s)) line+=' '; line+=it.s; end=it.x+it.w; }
+      out.push(line); prevY = r.y;
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+async function loadFile(file){
+  if(!file) return;
+  const st = $('status'); st.className='status'; st.textContent = 'Lecture de « '+file.name+' »…';
+  try{
+    const txt = /\.pdf$/i.test(file.name)||file.type==='application/pdf' ? await readPdf(file) : await file.text();
+    if(!txt.trim()) throw new Error("Ce PDF contient des images de texte, pas du texte sélectionnable. Copie plutôt le texte depuis la page web de la chanson et colle-le dans la zone Texte source.");
+    delete $('f-title').dataset.touched; delete $('f-artist').dataset.touched;
+    $('src').value = txt; render(); scheduleGuess(200);
+    st.className='status ok'; st.textContent = '« '+file.name+' » chargé.';
+  }catch(e){ st.textContent = e.message || 'Impossible de lire ce fichier.'; }
+}
+
+/* ================= Navigation ================= */
+function go(view, push=true){
+  const lib = view === 'librairie';
+  $('v-conv').hidden = lib; $('v-lib').hidden = !lib;
+  $('t-conv').toggleAttribute('aria-current', !lib); $('t-lib').toggleAttribute('aria-current', lib);
+  if(lib){ $('t-lib').setAttribute('aria-current','page'); renderLib(); } else $('t-conv').setAttribute('aria-current','page');
+  if(push && location.hash !== '#'+view) try{ history.replaceState(null,'','#'+view); }catch(e){ location.hash = view; }
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => go(t.dataset.view)));
+window.addEventListener('hashchange', () => go(location.hash==='#librairie' ? 'librairie' : 'convertir', false));
+
+/* ================= Branchements ================= */
+$('src').value = SAMPLE;
+$('status').textContent = 'Exemple inventé chargé. Remplace-le par ta partition.';
+$('src').addEventListener('input', () => { if(!$('src').value.trim()){ delete $('f-title').dataset.touched; delete $('f-artist').dataset.touched; } render(); scheduleGuess(); });
+['o-inst','o-und','o-sp','o-keep'].forEach(id => $(id).addEventListener('input', () => { lastSrc = null; render(); }));
+['f-title','f-artist'].forEach(id => $(id).addEventListener('input', e => { e.target.dataset.touched = '1'; render(); if(id==='f-artist') setHint(''); else scheduleGuess(); }));
+
+/* ================= Reconnaissance de l'artiste ================= */
+let sample = null, guessTimer = null, guessedFor = '', artistSource = '';
+function setHint(kind, text){
+  const h = $('artist-hint'); h.textContent = '';
+  if(!kind) return;
+  if(kind === 'busy'){ h.textContent = 'Recherche de l’artiste…'; return; }
+  if(kind === 'found'){
+    const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'Reconnu'; h.appendChild(t);
+    h.append(text || 'Artiste trouvé automatiquement. Corrige-le au besoin.');
+    return;
+  }
+  h.append(text);
+  if(sample && $('f-title').value.trim()){
+    const b = document.createElement('button'); b.type='button'; b.textContent = 'Chercher l’artiste'; b.onclick = () => guessArtist(true); h.appendChild(b);
+  }
+}
+function scheduleGuess(ms){ clearTimeout(guessTimer); guessTimer = setTimeout(() => guessArtist(false), ms ?? 1200); }
+function refreshHint(){
+  if($('f-artist').dataset.touched) return;
+  if(artist()){ if(artistSource !== 'ia') setHint('found', 'Artiste lu dans la partition. Corrige-le au besoin.'); }
+  else if($('f-title').value.trim()) setHint('none', 'Artiste introuvable dans le texte. ');
+  else setHint('');
+}
+async function guessArtist(force){
+  const t = $('f-title').value.trim();
+  if(!force && $('f-artist').dataset.touched) return;
+  if(!force && artist()){ refreshHint(); return; }
+  if(!t){ setHint(''); return; }
+  if(!sample){ refreshHint(); return; }
+  const lyr = state.sections.flatMap(b => b.lines).filter(l => l.trim()).slice(0, 12).join('\n');
+  const key = t + '|' + lyr.slice(0, 300);
+  if(!force && key === guessedFor) return;
+  guessedFor = key;
+  setHint('busy');
+  const prompt = `Identifie l'artiste qui interprète cette chanson. Tu reçois le titre et le début des paroles, extraits d'une feuille d'accords.\nRéponds UNIQUEMENT en JSON : {"artist": "nom exact de l'artiste ou null", "confidence": "high" | "medium" | "low"}.\nSi tu n'es pas raisonnablement sûr, mets artist à null. N'invente jamais un nom.\n\nTitre : ${t}\nParoles :\n${lyr}`;
+  try{
+    const r = await sample.json(prompt, { modelTier: 'quick' });
+    if(key !== guessedFor) return;
+    if(r && typeof r.artist === 'string' && r.artist.trim() && r.confidence !== 'low'){
+      if(!$('f-artist').dataset.touched){
+        $('f-artist').value = r.artist.trim(); artistSource = 'ia'; render();
+        setHint('found', r.confidence === 'high' ? 'Artiste reconnu automatiquement. Corrige-le au besoin.' : 'Artiste probable. Vérifie-le avant d’enregistrer.');
+      }
+    } else { setHint('none', 'Artiste non reconnu. Entre-le à la main, ou '); }
+  }catch(e){
+    if(e && (e.code === 'not_granted' || e.code === 'unavailable')){ sample = null; refreshHint(); }
+    else setHint('none', 'La recherche n’a pas fonctionné. Entre l’artiste à la main, ou ');
+  }
+}
+$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value=''; });
+const drop = $('drop');
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+$('fs').addEventListener('input', e => $('sheet').style.fontSize = e.target.value + 'px');
+$('sheet').style.fontSize = '19px';
+$('q').addEventListener('input', renderLib);
+$('copy').addEventListener('click', () => {
+  const t = plainText();
+  navigator.clipboard.writeText(t).then(() => { $('copy').textContent='Copié'; setTimeout(()=>$('copy').textContent='Copier',1500); })
+  .catch(() => { const r=document.createRange(); r.selectNodeContents($('sheet')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $('status').className='status'; $('status').textContent='Texte sélectionné : fais Ctrl+C (ou ⌘+C).'; });
+});
+$('save').addEventListener('click', saveToLibrary);
+$('pdf').addEventListener('click', () => {
+  if(!window.jspdf) return;
+  const { doc } = buildPdf();
+  saveFile(fileName(title(), artist()), doc.output('blob'), $('status'));
+});
+
+render();
+go(location.hash==='#librairie' ? 'librairie' : 'convertir', false);
+renderLib();
+(async () => {
+  try{ downloads = await window.claude?.use?.('downloads') || null; }catch(e){ downloads = null; }
+  try{ sample = await window.claude?.use?.('sample') || null; }catch(e){ sample = null; }
+  scheduleGuess(0);
+  if(window.jspdf && (downloads || !window.claude)) $('pdf').hidden = false;
+  if(!window.claude) $('print').hidden = false;
+  renderLib();
+  renderLib();
+})();
+store.init();
+</script>
+
+</body>
+</html>
