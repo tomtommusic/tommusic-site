@@ -131,7 +131,25 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
 .note{font-size:13px;color:var(--muted)}
 
 @media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
+.also{margin-top:auto;display:grid;gap:4px;position:relative;z-index:1}
+.also-l{margin:0 0 2px 14px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+a.tab{text-decoration:none}
+/* Bande promo + pied de page */
+.promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#2a1a52,#4c1d95);color:#fff;border-radius:20px;padding:18px 22px}
+.promo img{width:96px;height:96px;border-radius:12px;flex:none;box-shadow:0 10px 24px -12px rgba(0,0,0,.6)}
+.promo .pt{flex:1;min-width:200px}
+.promo .pk{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d9ccff}
+.promo h2{margin:2px 0 0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.promo .pb{display:flex;gap:8px;flex-wrap:wrap}
+.promo .btn{background:#fff;color:#2a1a52;border-color:#fff;text-decoration:none}
+.promo .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+.foot{max-width:1180px;margin:24px auto 0;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:13px;color:var(--muted)}
+.foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.foot a{color:var(--accent-hi);font-weight:700;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+@media print{.promo,.foot{display:none!important}}
 @media (max-width:720px){
+  .also{display:none}
   .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
     border-right:0;border-bottom:1px solid var(--line);z-index:5}
@@ -178,8 +196,11 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
         <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
     </nav>
-    <a class="tab" href="../" style="margin-top:auto;position:relative;z-index:1;text-decoration:none" aria-label="Retour à tommusic.ca">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="t">tommusic.ca</span></a>
+    <div class="also">
+      <p class="also-l">Aussi par Tom Tom Music</p>
+      <a class="tab" href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg><span class="t">TOM · accueil</span></a>
+      <a class="tab" href="../musidev/"><img src="../img/musidev-icon.png" alt="" width="22" height="22" style="border-radius:5px"><span class="t">MusiDev</span></a>
+    </div>
   </aside>
 
   <main>
@@ -250,6 +271,21 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
       <div id="lib" style="display:grid;gap:28px"></div>
       <p class="note" id="lib-where"></p>
     </section>
+    <aside class="promo" aria-label="Run Like a Thief">
+      <img src="../img/run-like-a-thief.jpg" alt="Pochette du single Run Like a Thief" width="96" height="96" loading="lazy">
+      <div class="pt">
+        <p class="pk">Le dernier single du créateur d'EZ Lyrics</p>
+        <h2>Run Like a Thief · TOM</h2>
+      </div>
+      <div class="pb">
+        <a class="btn" href="https://open.spotify.com/artist/5U2HKZJrJyO5o8Vr5p0pm9">Écouter sur Spotify</a>
+        <a class="btn ghost" href="https://music.apple.com/ca/artist/tom/1762424938">Apple Music</a>
+      </div>
+    </aside>
+    <footer class="foot">
+      <nav aria-label="Autres pages"><a href="../">TOM · accueil</a><a href="../musidev/">MusiDev</a><a href="./">EZ Lyrics</a></nav>
+      <span>© 2026 <a href="../">Tom Tom Music</a> · Danville, Québec</span>
+    </footer>
   </main>
 </div>
 
