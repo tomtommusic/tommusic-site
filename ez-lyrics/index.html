@@ -340,12 +340,20 @@ function cleanText(t){
     .replace(/[​-‍⁠﻿­]/g,'')
     .replace(/[Ͱ-ϿЀ-ӿԀ-ԯɡ]/g, c => LOOKALIKE[c] || c)
     .replace(/ /g,' ')
+    .replace(/[\u00B4\u0060\u2032]/g,"'")
     .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'$1')
     .replace(/^\s*```.*$/gm,'')
     .replace(/\r/g,'');
 }
 const isChordLine = l => { const t = l.trim().split(/\s+/).filter(Boolean); return t.length>0 && t.every(w=>CHORD.test(w)||FILLER.test(w)) && t.some(w=>CHORD.test(w)); };
 const SECTION = /^\s*\[([^\]]+)\]\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-?chorus|pr[ée]-?refrain|chorus|refrain|bridge|pont|solo|outro|interlude|instrumental|break|coda)\b[^a-z]*$/i;
+// Restes de l'interface des sites d'accords (Ultimate Guitar, etc.)
+const UI_JUNK = [
+  /^\s*[\d.,]+\s*(views?|vues)(\d|\s|$)/i, /^\s*[\d.,]+\s*(saves?|comments?|commentaires?|ratings?|votes?)\s*$/i,
+  /^\s*(author|auteur|difficulty|difficult[ée]|speed|vitesse|tab by|last (edit|update)|derni[eè]re mise [àa] jour|rating)\s*:?/i,
+  /^\s*(transpose|transposer|autoscroll|auto ?scroll|simplify|simplifier|font|print|imprimer|edit|report bad tab|add to favou?rites?|favou?rites?|chords?|accords?|strumming pattern|x|\u00D7|\+|-)\s*$/i,
+  /^\s*[+-]?\d+([.,]\d+)?\s*$/
+];
 const JUNK = /^\s*(page\s*\d+\s*\/\s*\d+|\d+\s*\/\s*\d+)\s*$/i;
 
 function convert(text, o){
@@ -375,7 +383,7 @@ function convert(text, o){
   for(; i<lines.length; i++){
     const raw = lines[i];
     if(JUNK.test(raw)) continue;
-    if(/^\s*(capo|tuning|accordage|strumming|rythmique)\b/i.test(raw)) continue;
+    if(/^\s*(capo|tuning|accordage|strumming|rythmique)\b/i.test(raw) || UI_JUNK.some(r => r.test(raw))) continue;
     if(isChordLine(raw)) continue;
     const s = raw.match(SECTION);
     if(s){ flush(); cur = {t:'sec', name:(s[1]||s[2]).trim(), lines:[]}; continue; }
