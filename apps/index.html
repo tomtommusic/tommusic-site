@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr-CA" data-lang="fr" data-langs="fr,en" data-key="tom-lang" data-title-fr="Apps · Tom Tom Music" data-title-en="Apps · Tom Tom Music">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apps · Tom Tom Music</title>
+<meta name="description" content="Les apps de Tom Tom Music pour les musiciens et les profs de musique : MusiDev et EZ Lyrics.">
+<link rel="icon" href="../img/favicon-32.png">
+<link rel="stylesheet" href="../style.css">
+<script src="../lang.js"></script>
+<style>
+.apphead{padding:64px 0 24px;background:linear-gradient(180deg,#F3ECE1,var(--paper))}
+.apphead h1{font-size:clamp(2.4rem,7vw,3.4rem);margin:0 0 .25em}
+.apphead p{margin:0;color:var(--muted);max-width:56ch;font-size:1.12rem}
+.applist{padding:32px 0 88px}
+.apps{display:grid;gap:20px;list-style:none;margin:0;padding:0}
+.app{display:flex;gap:24px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px}
+.app .ico{width:84px;height:84px;border-radius:20px;flex:none}
+.app .ico.ez{display:grid;place-items:center;background:linear-gradient(150deg,#f3eeff,#e4d8ff)}
+.app .ico.ez svg{width:48px;height:48px}
+.app .body{min-width:0;flex:1}
+.app h2{font-size:1.7rem;margin:0 0 .2em}
+.app p{margin:0 0 .9em;color:var(--muted);max-width:60ch}
+.app .meta{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 1em}
+.btn.violet{background:#6d28d9;color:#fff}
+.btn.violet:hover{background:#5b21b6}
+@media (max-width:560px){.app{flex-direction:column;gap:16px;padding:22px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../">TOM</a>
+  <nav class="nav" aria-label="Sections">
+    <a href="../#musique"><span lang="fr">Musique</span><span lang="en">Music</span></a>
+    <a href="../#contact">Contact</a>
+    <button class="langbtn" type="button">EN</button>
+  </nav>
+</div></header>
+<main>
+<section class="apphead">
+  <div class="wrap">
+    <p class="tag" style="font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6em"><span lang="fr">Par Tom Tom Music</span><span lang="en">By Tom Tom Music</span></p>
+    <h1>Apps</h1>
+    <p lang="fr">Des outils que je développe pour les musiciens, les chanteurs et les profs de musique.</p>
+    <p lang="en">Tools I build for musicians, singers and music teachers.</p>
+  </div>
+</section>
+<section class="applist">
+  <div class="wrap">
+    <ul class="apps">
+      <li class="app">
+        <img class="ico" src="../img/musidev-icon.png" alt="" width="84" height="84">
+        <div class="body">
+          <h2>MusiDev</h2>
+          <p class="meta"><span lang="fr">Windows · iPhone et iPad · Android</span><span lang="en">Windows · iPhone &amp; iPad · Android</span></p>
+          <p lang="fr">Une app éducative pour développer l'oreille, lire la musique et pratiquer son instrument, avec des exercices générés au hasard.</p>
+          <p lang="en">An educational app to train your ear, read music and practise your instrument, with randomly generated exercises.</p>
+          <a class="btn" href="../musidev/"><span lang="fr">Découvrir MusiDev</span><span lang="en">Discover MusiDev</span></a>
+        </div>
+      </li>
+      <li class="app">
+        <div class="ico ez" aria-hidden="true"><svg viewBox="0 0 48 48"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9f7aea"/><stop offset="1" stop-color="#6d3be0"/></linearGradient></defs><path fill="url(#g)" d="M40 5.5v26.2a7 7 0 1 1-4-6.3V14.6l-18 4v17.1a7 7 0 1 1-4-6.3V10.2a2 2 0 0 1 1.6-2L37.6 3.5A2 2 0 0 1 40 5.5z"/></svg></div>
+        <div class="body">
+          <h2>EZ Lyrics</h2>
+          <p class="meta"><span lang="fr">Gratuit · Dans le navigateur · En français</span><span lang="en">Free · In your browser · In French</span></p>
+          <p lang="fr">Colle une feuille d'accords : EZ Lyrics enlève les accords, garde les paroles et les sections pour le chanteur, puis te donne un PDF propre à imprimer.</p>
+          <p lang="en">Paste a chord sheet: EZ Lyrics removes the chords, keeps the lyrics and song sections for the singer, and gives you a clean PDF to print.</p>
+          <a class="btn violet" href="../ez-lyrics/"><span lang="fr">Ouvrir EZ Lyrics</span><span lang="en">Open EZ Lyrics</span></a>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+</main>
+<footer><div class="wrap"><span>© 2026 <a href="../" style="color:inherit">Tom Tom Music</a></span><span>Danville, Québec</span></div></footer>
+</body>
+</html>

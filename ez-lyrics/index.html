@@ -131,8 +131,6 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
 .note{font-size:13px;color:var(--muted)}
 
 @media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
-.also{margin-top:auto;display:grid;gap:4px;position:relative;z-index:1}
-.also-l{margin:0 0 2px 14px;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
 a.tab{text-decoration:none}
 /* Bande promo + pied de page */
 .promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#2a1a52,#4c1d95);color:#fff;border-radius:20px;padding:18px 22px}
@@ -148,8 +146,12 @@ a.tab{text-decoration:none}
 .foot a{color:var(--accent-hi);font-weight:700;text-decoration:none}
 .foot a:hover{text-decoration:underline}
 @media print{.promo,.foot{display:none!important}}
+.toplinks{max-width:1180px;margin:-16px auto 12px;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.toplinks a{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;border:1px solid transparent}
+.toplinks a:hover{color:var(--accent-hi);background:var(--panel);border-color:var(--line-hi)}
+.toplinks svg{width:17px;height:17px}
+@media print{.toplinks{display:none!important}}
 @media (max-width:720px){
-  .also{display:none}
   .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
     border-right:0;border-bottom:1px solid var(--line);z-index:5}
@@ -196,14 +198,13 @@ a.tab{text-decoration:none}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
         <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
     </nav>
-    <div class="also">
-      <p class="also-l">Aussi par Tom Tom Music</p>
-      <a class="tab" href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg><span class="t">TOM · accueil</span></a>
-      <a class="tab" href="../musidev/"><img src="../img/musidev-icon.png" alt="" width="22" height="22" style="border-radius:5px"><span class="t">MusiDev</span></a>
-    </div>
   </aside>
 
   <main>
+    <nav class="toplinks" aria-label="Tom Tom Music">
+      <a href="../apps/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>Apps</a>
+      <a href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>tommusic.ca</a>
+    </nav>
     <!-- ================= CONVERTIR ================= -->
     <section class="view" id="v-conv" aria-labelledby="h-conv">
       <div class="head">
@@ -283,7 +284,7 @@ a.tab{text-decoration:none}
       </div>
     </aside>
     <footer class="foot">
-      <nav aria-label="Autres pages"><a href="../">TOM · accueil</a><a href="../musidev/">MusiDev</a><a href="./">EZ Lyrics</a></nav>
+      <nav aria-label="Autres pages"><a href="../">TOM · accueil</a><a href="../apps/">Apps</a><a href="../musidev/">MusiDev</a></nav>
       <span>© 2026 <a href="../">Tom Tom Music</a> · Danville, Québec</span>
     </footer>
   </main>
