@@ -228,7 +228,8 @@ a.tab{text-decoration:none}
 
       <div class="grid">
         <div class="card">
-          <p class="label">Texte source</p>
+          <div class="toolbar" style="justify-content:space-between"><p class="label">Texte source</p>
+            <button class="btn small" id="clear" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>Effacer tout</button></div>
           <textarea id="src" spellcheck="false" aria-label="Texte de la partition"></textarea>
           <div class="opts">
             <label><input type="checkbox" id="o-inst" checked> Indiquer les sections instrumentales</label>
@@ -847,6 +848,21 @@ $('copy').addEventListener('click', () => {
   .catch(() => { const r=document.createRange(); r.selectNodeContents($('sheet')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); $('status').className='status'; $('status').textContent='Texte sélectionné : fais Ctrl+C (ou ⌘+C).'; });
 });
 $('save').addEventListener('click', saveToLibrary);
+let clearedText = '';
+$('clear').addEventListener('click', () => {
+  const txt = $('src').value;
+  if(!txt.trim()){ $('src').focus(); return; }
+  clearedText = txt;
+  $('src').value = '';
+  delete $('f-title').dataset.touched; delete $('f-artist').dataset.touched;
+  $('f-title').value = ''; $('f-artist').value = ''; artistSource = ''; setHint('');
+  render(); $('src').focus();
+  const st = $('status'); st.className = 'status'; st.textContent = 'Texte source effacé. ';
+  const undo = document.createElement('button'); undo.type = 'button'; undo.textContent = 'Annuler';
+  undo.style.cssText = 'font:inherit;font-weight:700;color:var(--accent-hi);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer';
+  undo.onclick = () => { $('src').value = clearedText; render(); st.className = 'status ok'; st.textContent = 'Texte source rétabli.'; };
+  st.appendChild(undo);
+});
 $('pdf').addEventListener('click', () => {
   if(!window.jspdf) return;
   const { doc } = buildPdf();
