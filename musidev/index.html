@@ -16,12 +16,11 @@
 .brand img{width:64px;height:64px;border-radius:16px}
 .brand h1{font-size:clamp(2.6rem,7vw,3.6rem);margin:0}
 .lead{font-size:1.18rem;margin:0 0 1.5em;max-width:44ch}
-.stores{display:grid;grid-template-columns:max-content max-content;gap:10px 14px;align-items:center}
-.store{display:contents}
-.store .btn{justify-content:center;justify-self:stretch;width:auto}
-.price{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--accent);color:var(--accent);font:700 1rem/1 Atkinson,sans-serif;white-space:nowrap}
-.price.free{background:#2F6B5E;border-color:#2F6B5E;color:#fff}
-@media (max-width:420px){.stores{grid-template-columns:1fr auto}.store .btn{font-size:.92rem;padding:11px 14px}}
+.stores{display:flex;flex-wrap:wrap;gap:22px 14px;padding-top:12px}
+.stores .btn{position:relative;overflow:visible}
+/* étiquette de prix accrochée au coin supérieur droit de chaque bouton */
+.tag-price{position:absolute;top:-13px;right:-10px;padding:5px 9px 4px;border-radius:7px;background:#FFF8EC;color:var(--accent);border:1.5px solid var(--accent);font:700 .78rem/1 Atkinson,sans-serif;white-space:nowrap;transform:rotate(6deg);box-shadow:0 3px 8px rgb(42 32 25/.18);pointer-events:none}
+.tag-price.free{background:#2F6B5E;border-color:#2F6B5E;color:#fff}
 .tag{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:1.6em 0 .3em}
 .soon{color:var(--muted);font-size:.95rem;margin:0}
 .btn.win{background:var(--ink);color:var(--paper)}
@@ -71,9 +70,9 @@
       <p class="lead" lang="en">Train your ear, learn to read music and practise your instrument with randomly generated exercises: you never just memorise the answers.</p>
       <p class="lead" lang="es">Desarrolla tu oído, aprende a leer música y practica tu instrumento con ejercicios generados al azar: nunca memorizas las respuestas.</p>
       <div class="stores">
-        <div class="store"><a class="btn win" href="telecharger/MusiDev-Windows.zip" download><span lang="fr">Télécharger pour Windows</span><span lang="en">Download for Windows</span><span lang="es">Descargar para Windows</span></a><span class="price free"><span lang="fr">100&nbsp;% gratuit</span><span lang="en">100% free</span><span lang="es">100&nbsp;% gratis</span></span></div>
-        <div class="store"><a class="btn" href="https://apps.apple.com/app/id6827199318"><span lang="fr">Télécharger sur l'App Store</span><span lang="en">Download on the App Store</span><span lang="es">Descargar en el App Store</span></a><span class="price"><span lang="fr">3,99&nbsp;$</span><span lang="en">$3.99</span><span lang="es">3,99&nbsp;$</span></span></div>
-        <div class="store"><a class="btn" href="https://play.google.com/store/apps/details?id=ca.tomtommusic.musidev"><span lang="fr">Télécharger sur Google Play</span><span lang="en">Get it on Google Play</span><span lang="es">Disponible en Google Play</span></a><span class="price"><span lang="fr">3,99&nbsp;$</span><span lang="en">$3.99</span><span lang="es">3,99&nbsp;$</span></span></div>
+        <a class="btn win" href="telecharger/MusiDev-Windows.zip" download><span lang="fr">Télécharger pour Windows</span><span lang="en">Download for Windows</span><span lang="es">Descargar para Windows</span><span class="tag-price free"><span lang="fr">100&nbsp;% gratuit</span><span lang="en">100% free</span><span lang="es">100&nbsp;% gratis</span></span></a>
+        <a class="btn" href="https://apps.apple.com/app/id6827199318"><span lang="fr">Télécharger sur l'App Store</span><span lang="en">Download on the App Store</span><span lang="es">Descargar en el App Store</span><span class="tag-price"><span lang="fr">3,99&nbsp;$</span><span lang="en">$3.99</span><span lang="es">3,99&nbsp;$</span></span></a>
+        <a class="btn" href="https://play.google.com/store/apps/details?id=ca.tomtommusic.musidev"><span lang="fr">Télécharger sur Google Play</span><span lang="en">Get it on Google Play</span><span lang="es">Disponible en Google Play</span><span class="tag-price"><span lang="fr">3,99&nbsp;$</span><span lang="en">$3.99</span><span lang="es">3,99&nbsp;$</span></span></a>
       </div>
       <details class="winwarn">
         <summary><span lang="fr">⚠ Windows affiche un avertissement ? C'est normal.</span><span lang="en">⚠ Windows shows a warning? That's normal.</span><span lang="es">⚠ ¿Windows muestra una advertencia? Es normal.</span></summary>
