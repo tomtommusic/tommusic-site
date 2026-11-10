@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Chart It : fais jouer une vidéo YouTube ou un fichier audio, et obtiens la grille d'accords à la façon d'un Real Book (forme, accords, mesures). Par Tom Tom Music.">
+<link rel="icon" href="../img/favicon-32.png">
+<title>Chart It</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Même modèle qu'EZ Lyrics (barre latérale + zone principale), thème bleu océan.
+   Contrastes élevés; aucune information portée par la couleur seule (contours, symboles, texte). */
+:root{
+  --bg:#f2f7fa; --side:#f9fcfd; --panel:#ffffff; --panel-2:#e1f0f7; --line:#d6e6ee; --line-hi:#b4d1df;
+  --ink:#0e2230; --muted:#4a5e6c; --accent:#0a6a92; --accent-hi:#075576; --accent-ink:#ffffff;
+  --ring:rgba(10,106,146,.17); --ring-2:rgba(10,106,146,.06); --hover:#06506f; --danger:#b4232a; --shadow:rgba(10,60,90,.2);
+  --paper:#ffffff; --paper-ink:#111114; --paper-muted:#4a4a55;
+  --ui:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --read:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(900px 600px at 100% 0%, #d8edf8 0%, transparent 60%) fixed, var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
+img{max-width:100%}
+
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100%}
+/* ---------- Barre latérale ---------- */
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;max-height:100%;background:var(--side);border-right:1px solid var(--line);
+  padding:36px 14px 24px max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:34px;overflow:hidden}
+.side::after{content:"";position:absolute;left:-230px;bottom:-230px;width:460px;height:460px;border-radius:50%;pointer-events:none;
+  background:repeating-radial-gradient(circle at center, var(--ring) 0 52px, var(--ring-2) 52px 104px);
+  -webkit-mask:radial-gradient(circle, #000 0 60%, transparent 72%);mask:radial-gradient(circle, #000 0 60%, transparent 72%)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.brand svg{width:44px;height:44px}
+.brand .word{font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1.1}
+.brand .word b{color:var(--accent-hi);font-weight:800}
+nav{display:grid;gap:6px;position:relative;z-index:1}
+.tab{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:12px;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-align:left;position:relative}
+.tab svg{width:22px;height:22px;flex:none}
+.tab:hover{color:var(--ink);background:var(--panel)}
+.tab[aria-current="page"]{color:var(--accent-hi);background:var(--panel-2)}
+.tab[aria-current="page"]::before{content:"";position:absolute;left:-14px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--accent-hi)}
+.tab .count{margin-left:auto;font-size:12px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--panel-2);color:var(--accent-hi);border:1px solid var(--line-hi);text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- Zone principale ---------- */
+main{min-width:0;padding-block:40px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.view{max-width:1180px;margin:0 auto;display:grid;gap:24px}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.head h1{margin:0;font-weight:800;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.head h1 b{color:var(--accent-hi)}
+.head p{margin:6px 0 0;color:var(--muted);max-width:66ch}
+
+.pill{box-shadow:0 10px 30px -22px var(--shadow);display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line-hi);border-radius:999px;padding:10px 10px 10px 22px;min-height:62px}
+.pill.over{border-color:var(--accent-hi);background:var(--panel-2)}
+.pill svg.ico{width:22px;height:22px;flex:none;color:var(--muted)}
+.round{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);border:0;cursor:pointer;position:relative}
+.round:hover{background:var(--hover)}
+.round svg{width:20px;height:20px}
+.search{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;outline:none}
+.search::placeholder{color:var(--muted)}
+.alt{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:-10px;font-size:14px;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
+.label{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.opts{display:grid;gap:8px;font-size:14px}
+.opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;color:var(--ink)}
+.opts input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:none}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.field input,.field select,select.sel{width:100%;background:var(--bg);border:1px solid var(--line-hi);border-radius:10px;padding:9px 12px;color:var(--ink);font:inherit;font-weight:600}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.size{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);margin-right:auto}
+.size input{accent-color:var(--accent);width:110px}
+.btn{font:inherit;font-weight:700;font-size:14px;border-radius:999px;padding:9px 16px;cursor:pointer;border:1px solid var(--line-hi);background:var(--panel-2);color:var(--ink);
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;text-decoration:none}
+.btn svg{width:17px;height:17px}
+.btn:hover{border-color:var(--accent-hi)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--hover)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.small{padding:7px 13px;font-size:13px}
+.btn.big{padding:12px 20px;font-size:15px}
+.btn.rec{background:#fff;border:2px solid var(--danger);color:var(--danger)}
+.btn.rec::before{content:"";width:10px;height:10px;border-radius:2px;background:var(--danger)}
+:is(button,input,select,textarea,.round,a):focus-visible{outline:3px solid var(--accent-hi);outline-offset:2px}
+.status{font-size:14px;color:var(--muted);min-height:1.3em}
+.status.ok::before{content:"✓ ";color:var(--accent-hi);font-weight:800}
+.status.err::before{content:"⚠ ";font-weight:800;color:var(--danger)}
+.status button{font:inherit;font-weight:700;color:var(--accent-hi);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+.note{font-size:13px;color:var(--muted);margin:0}
+
+/* Lecteur */
+.player{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#0d1b24;display:grid;place-items:center;color:#cfe3ee;text-align:center}
+.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.player .ph{padding:20px;display:grid;gap:6px;justify-items:center;font-size:14px}
+.player .ph svg{width:38px;height:38px;opacity:.8}
+.player.audio{aspect-ratio:auto;padding:14px;background:var(--bg);color:var(--ink)}
+.player.audio audio{width:100%}
+.capture{display:grid;gap:12px}
+.recbox{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel-2);border:1px solid var(--line-hi);border-radius:14px;padding:12px 14px}
+.recbox .dot{width:12px;height:12px;border-radius:50%;background:var(--danger);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+.recbox .time{font-weight:800;font-variant-numeric:tabular-nums;font-size:18px}
+.meter{flex:1;min-width:120px;height:10px;border-radius:999px;background:#fff;border:1px solid var(--line-hi);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+.progress{height:10px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-hi);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent)}
+.howto{font-size:13.5px;color:var(--ink);background:#fff8e6;border:1px solid #e9c46a;border-left:5px solid #b7791f;border-radius:12px;padding:10px 14px;line-height:1.5}
+.howto strong{display:block}
+.howto ol{margin:4px 0 0;padding-left:20px}
+details.settings{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+details.settings summary{cursor:pointer;font-weight:700}
+details.settings .fields{margin-top:10px}
+.seg{display:inline-flex;border:1px solid var(--line-hi);border-radius:999px;overflow:hidden;background:var(--bg)}
+.seg button{font:inherit;font-size:13px;font-weight:700;border:0;background:none;padding:6px 11px;cursor:pointer;color:var(--ink)}
+.seg button+button{border-left:1px solid var(--line-hi)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.tools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--muted);padding:10px 12px;border:1px dashed var(--line-hi);border-radius:12px}
+.tools .grp{display:flex;align-items:center;gap:6px}
+.tools select{padding:5px 8px;font-size:13px;width:auto}
+.ib{font:inherit;font-weight:800;font-size:13px;min-width:30px;height:30px;border-radius:8px;border:1px solid var(--line-hi);background:var(--panel);cursor:pointer;color:var(--ink)}
+.ib:hover{border-color:var(--accent-hi)}
+
+/* ---------- Feuille : grille Real Book ---------- */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:30px 30px 34px;min-height:380px;font-family:var(--read);line-height:1.35;
+  border:1px solid var(--line);box-shadow:0 18px 40px -26px var(--shadow)}
+.paper .title{font-family:var(--ui);font-weight:800;font-size:1.55em;line-height:1.15;margin:0 0 .1em;letter-spacing:-.01em}
+.paper .artist{color:var(--paper-muted);margin:0 0 .5em;font-weight:700}
+.paper .meta{display:flex;flex-wrap:wrap;gap:.2em 1.1em;font-size:.82em;margin:0;font-weight:700}
+.paper .meta span{white-space:nowrap}
+.paper .form{font-size:.82em;margin:.25em 0 .4em;color:var(--paper-muted)}
+.paper .form b{color:var(--paper-ink)}
+.paper .empty-sheet{color:var(--paper-muted);font-family:var(--ui);text-align:center;padding:60px 10px;display:grid;gap:8px}
+.paper .empty-sheet strong{color:var(--paper-ink);font-size:1.05em}
+.csec{display:grid;grid-template-columns:4.4em minmax(0,1fr);gap:.2em .7em;margin-top:1.1em;break-inside:avoid;page-break-inside:avoid}
+.slabel{align-self:start;justify-self:start;min-width:2.6em;border:2px solid var(--paper-ink);border-radius:4px;font-family:var(--ui);font-weight:800;text-align:center;padding:.15em .3em;
+  font-size:.82em;line-height:1.2;cursor:pointer;background:var(--paper);color:var(--paper-ink);max-width:5.4em;overflow-wrap:anywhere}
+.slabel small{display:block;font-weight:600;font-size:.72em;color:var(--paper-muted)}
+.slabel .rx{display:block;font-size:.8em}
+.rows{display:grid;gap:.55em}
+.rows.hasv{padding-top:.9em}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative}
+.bar{position:relative;min-height:2.75em;border:0;border-left:1.5px solid var(--paper-ink);padding:.3em .4em .3em .5em;display:flex;align-items:center;gap:.2em;cursor:pointer;background:none;font:inherit;color:inherit;text-align:left;min-width:0}
+.bar:last-child,.bar.last{border-right:1.5px solid var(--paper-ink)}
+.bar.dbl{border-right:4px double var(--paper-ink)}
+.bar.fin{border-right:0}
+.bar.fin::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;border-left:1.5px solid var(--paper-ink);border-right:4px solid var(--paper-ink)}
+.bar:hover{background:#f1f6f9}
+.bar.now{outline:3px solid var(--accent);outline-offset:-3px;background:#eaf4f9}
+.bar.now::before{content:"▶";position:absolute;left:.15em;top:.05em;font-size:.55em;color:var(--accent)}
+.bar.rs{border-left:0;padding-left:1.35em}
+.bar.rs .rpl{position:absolute;left:0;top:0;bottom:0;width:14px}
+.bar.re{border-right:0;padding-right:1.35em}
+.bar.re .rpr{position:absolute;right:0;top:0;bottom:0;width:14px}
+.rpl::before,.rpr::before{content:"";position:absolute;top:0;bottom:0;width:7px;border-color:var(--paper-ink);border-style:solid}
+.rpl::before{left:0;border-width:0 1.5px 0 4px}
+.rpr::before{right:0;border-width:0 4px 0 1.5px}
+.rpl::after,.rpr::after{content:"";position:absolute;top:50%;width:4px;height:13px;transform:translateY(-50%);background:radial-gradient(circle,var(--paper-ink) 1.7px,transparent 2.1px) 0 0/4px 6.5px repeat-y}
+.rpl::after{left:10px}.rpr::after{right:10px}
+.volta{position:absolute;left:0;right:0;top:-.95em;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
+.tk{flex:1 1 0;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
+.tk.s{flex:.55 1 0;align-items:center}
+.ch{font-weight:700;font-size:calc(1.22em * var(--fit,1));line-height:1.05;white-space:nowrap}
+.ch .qm{font-size:.62em;vertical-align:super;margin-left:1px;font-family:var(--ui);font-weight:800}
+.sl{font-size:1.15em;color:var(--paper-muted);font-weight:400;line-height:1.05}
+.pct{font-size:1.35em;font-weight:700;width:100%;text-align:center;line-height:1}
+.rn{font-size:calc(.6em * max(var(--fit,1),.8));font-weight:700;color:var(--paper-muted);margin-top:.15em;white-space:nowrap;font-family:var(--ui)}
+.nc{font-size:.85em;font-weight:700;color:var(--paper-muted)}
+.legend{margin-top:1.6em;font-size:.68em;color:var(--paper-muted);font-family:var(--ui)}
+
+/* ---------- Dialogues ---------- */
+dialog{border:1px solid var(--line-hi);border-radius:18px;padding:20px;max-width:min(460px,calc(100vw - 32px));width:100%;color:var(--ink);box-shadow:0 30px 60px -20px var(--shadow)}
+dialog::backdrop{background:rgba(10,30,45,.35)}
+dialog h2{margin:0 0 4px;font-size:18px;font-weight:800}
+dialog p{margin:0 0 10px;color:var(--muted);font-size:14px}
+dialog .field input{font-size:18px;font-family:var(--read);font-weight:700}
+dialog .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:14px}
+dialog .acts .left{margin-right:auto;display:flex;gap:8px;flex-wrap:wrap}
+dialog .err{color:var(--danger);font-size:13px;font-weight:700;min-height:1.2em;margin-top:6px}
+
+/* ---------- Librairie ---------- */
+.lib-meta{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.artist-group{display:grid;gap:10px}
+.artist-group h2{margin:0;display:flex;align-items:baseline;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.artist-group h2 span{font-size:13px;color:var(--muted);font-weight:600}
+.files{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.file{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;flex-wrap:wrap}
+.file .doc{width:40px;height:48px;flex:none;border-radius:6px;background:var(--paper);display:grid;border:1px solid var(--line-hi);position:relative;overflow:hidden}
+.file .doc::before{content:"";position:absolute;inset:9px 6px 9px 6px;background:linear-gradient(90deg,#55555f 1px,transparent 1px) 0 0/25% 100%,repeating-linear-gradient(transparent 0 5px,#c9c9d2 5px 6px);border-right:1px solid #55555f}
+.file .info{flex:1;min-width:180px}
+.file .name{font-weight:700;overflow-wrap:anywhere}
+.file .sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.file .acts{display:flex;gap:8px;flex-wrap:wrap}
+.empty{background:var(--panel);border:1px dashed var(--line-hi);border-radius:18px;padding:36px 24px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.empty strong{color:var(--ink);font-size:17px}
+.warn{display:flex;gap:12px;align-items:flex-start;background:#fff8e6;border:1px solid #e9c46a;border-left:5px solid #b7791f;border-radius:12px;padding:12px 16px;color:#3d2c05;font-size:14px;line-height:1.5}
+.warn svg{width:22px;height:22px;flex:none;color:#8a5a00;margin-top:1px}
+.warn strong{display:block;margin-bottom:2px}
+
+@media (max-width:980px){ .grid{grid-template-columns:minmax(0,1fr)} }
+a.tab{text-decoration:none}
+/* Bande promo + pied de page */
+.promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#0b2f42,#0a6a92);color:#fff;border-radius:20px;padding:18px 22px}
+.promo img{width:96px;height:96px;border-radius:12px;flex:none;box-shadow:0 10px 24px -12px rgba(0,0,0,.6)}
+.promo .pt{flex:1;min-width:200px}
+.promo .pk{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#cde9f6}
+.promo h2{margin:2px 0 0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.promo .pb{display:flex;gap:8px;flex-wrap:wrap}
+.promo .btn{background:#fff;color:#0b2f42;border-color:#fff}
+.promo .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+.foot{max-width:1180px;margin:24px auto 0;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:13px;color:var(--muted)}
+.foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.foot a{color:var(--accent-hi);font-weight:700;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+.toplinks{max-width:1180px;margin:-16px auto 12px;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.toplinks a{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;border:1px solid transparent}
+.toplinks a:hover{color:var(--accent-hi);background:var(--panel);border-color:var(--line-hi)}
+.toplinks svg{width:17px;height:17px}
+@media (max-width:720px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .side{position:sticky;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+    border-right:0;border-bottom:1px solid var(--line);z-index:5}
+  .side::after{display:none}
+  .brand{flex-direction:row;gap:8px}
+  .brand svg{width:28px;height:28px}
+  .brand .word{font-size:15px}
+  nav{display:flex;margin-left:auto;gap:4px}
+  .tab{padding:8px 10px;font-size:14px;gap:6px}
+  .tab svg{width:18px;height:18px}
+  .tab[aria-current="page"]::before{display:none}
+  .tab .count{display:none}
+  main{padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .paper{padding:20px 12px}
+  .fields{grid-template-columns:1fr}
+  .csec{grid-template-columns:minmax(0,1fr)}
+  .pill{padding-left:16px}
+}
+@media (max-width:360px){ .tab .t{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{
+  :root{--bg:#fff}
+  body{background:#fff}
+  .side,.head,.pill,.alt,.grid>.card:first-child,.fiche-top,#v-lib,.promo,.foot,.toplinks,dialog{display:none!important}
+  .app,.grid{display:block}
+  main{padding:0}
+  .card{border:0;padding:0;background:#fff}
+  .paper{box-shadow:none;padding:0;border:0}
+  .bar.now{outline:0;background:none}.bar.now::before{display:none}
+  .bar:hover{background:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a9ac7"/><stop offset="1" stop-color="#075576"/></linearGradient></defs>
+        <rect x="4" y="8" width="40" height="32" rx="6" fill="url(#g)"/>
+        <path d="M14 14v20M24 14v20M34 14v20" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".9"/>
+        <path d="M7.5 24h33" stroke="#fff" stroke-width="1.6" opacity=".55"/></svg>
+      <div class="word"><b>Chart</b> It</div>
+    </div>
+    <nav aria-label="Sections">
+      <button class="tab" id="t-an" data-view="analyser" aria-current="page" aria-label="Analyser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10M21 12h0"/></svg>
+        <span class="t">Analyser</span></button>
+      <button class="tab" id="t-lib" data-view="librairie" aria-label="Librairie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
+    </nav>
+  </aside>
+
+  <main>
+    <nav class="toplinks" aria-label="Tom Tom Music">
+      <a href="../apps/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>Apps</a>
+      <a href="../ez-lyrics/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>EZ Lyrics</a>
+      <a href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>tommusic.ca</a>
+    </nav>
+
+    <!-- ================= ANALYSER ================= -->
+    <section class="view" id="v-an" aria-labelledby="h-an">
+      <div class="head">
+        <div>
+          <h1 id="h-an">Trouver les <b>accords</b> d'une chanson</h1>
+          <p>Colle un lien YouTube ou ouvre un fichier audio ou vidéo. Chart It écoute la chanson, puis te donne la grille à la façon d'un Real Book : la forme, les accords et le nombre de mesures.</p>
+        </div>
+      </div>
+
+      <form class="pill" id="url-form">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+        <input class="search" id="url" type="url" inputmode="url" placeholder="Colle un lien YouTube…" aria-label="Lien YouTube" autocomplete="off">
+        <button class="round" type="submit" title="Charger la vidéo" aria-label="Charger la vidéo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+      <div class="alt">
+        <span>ou</span>
+        <label class="btn small" style="position:relative"><input type="file" id="file" accept="audio/*,video/*,.mp3,.m4a,.wav,.mp4,.mov,.webm,.ogg,.flac,.aac" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" aria-label="Ouvrir un fichier audio ou vidéo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Ouvrir un fichier</label>
+        <button class="btn small" type="button" id="other-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Écouter un autre onglet</button>
+      </div>
+
+      <div class="grid">
+        <!-- Colonne gauche : lecteur et écoute -->
+        <div class="card">
+          <p class="label">Source</p>
+          <div class="player" id="player-box">
+            <div class="ph" id="player-ph">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>
+              <strong>Aucune vidéo pour l'instant</strong>
+              <span>Colle un lien YouTube plus haut, ou ouvre un fichier.</span>
+            </div>
+          </div>
+
+          <div class="capture" id="capture" hidden>
+            <div class="opts" id="cap-opts">
+              <label><input type="checkbox" id="o-silent" checked> Écoute silencieuse : le son ne sort pas des haut-parleurs pendant l'analyse</label>
+              <label><input type="checkbox" id="o-start" checked> Recommencer la vidéo au début</label>
+              <div class="toolbar" style="font-size:14px;gap:10px">Vitesse d'écoute
+                <div class="seg" role="group" aria-label="Vitesse d'écoute" id="speed">
+                  <button type="button" data-r="1" aria-pressed="true">1×</button><button type="button" data-r="1.5" aria-pressed="false">1,5×</button><button type="button" data-r="2" aria-pressed="false">2×</button>
+                </div>
+              </div>
+              <p class="note" id="speed-note">À 1,5× ou 2×, l'attente est plus courte, mais la précision baisse un peu.</p>
+            </div>
+            <div class="howto" id="howto">
+              <strong>Au moment de partager :</strong>
+              <ol><li>Choisis <b id="howto-tab">l'onglet de Chart It</b>.</li><li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché.</li><li>Clique sur <b>Partager</b>. La vidéo démarre toute seule.</li></ol>
+            </div>
+            <div class="toolbar">
+              <button class="btn primary big" type="button" id="listen">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></svg>Écouter et analyser</button>
+              <button class="btn primary big" type="button" id="analyze-file" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></svg>Analyser le fichier</button>
+            </div>
+            <div class="recbox" id="recbox" hidden>
+              <span class="dot" aria-hidden="true"></span>
+              <span><span class="time" id="rec-time">0:00</span> <span class="note" id="rec-note">enregistré</span></span>
+              <div class="meter" title="Niveau du son capté" aria-hidden="true"><i id="rec-level"></i></div>
+              <button class="btn rec small" type="button" id="stop">Arrêter et analyser</button>
+              <button class="btn small" type="button" id="cancel">Annuler</button>
+            </div>
+            <div id="prog-box" hidden style="display:grid;gap:6px">
+              <div class="progress" role="progressbar" aria-label="Analyse" aria-valuemin="0" aria-valuemax="100" id="prog"><i id="prog-bar"></i></div>
+              <span class="note" id="prog-text">Analyse…</span>
+            </div>
+            <div class="status" id="cap-status" role="status"></div>
+          </div>
+
+          <details class="settings" id="settings">
+            <summary>Réglages d'analyse</summary>
+            <div class="fields">
+              <div class="field"><label for="o-vocab">Accords à reconnaître</label>
+                <select id="o-vocab"><option value="simple">Majeurs et mineurs</option><option value="sept" selected>+ accords de 7e</option><option value="etendu">+ dim, ø, sus</option></select></div>
+              <div class="field"><label for="o-detail">Détail de la grille</label>
+                <select id="o-detail"><option value="4">Simplifiée (accords d'au moins 4 temps)</option><option value="2" selected>Normale (au moins 2 temps)</option><option value="1">Détaillée (accords de passage)</option></select></div>
+            </div>
+            <div class="opts" style="margin-top:10px"><label><input type="checkbox" id="o-inv" checked> Repérer les renversements (Do/Mi, G/B…)</label></div>
+            <p class="note" id="settings-note" style="margin-top:8px">Les réglages s'appliquent tout de suite à la dernière chanson écoutée.</p>
+          </details>
+        </div>
+
+        <!-- Colonne droite : grille -->
+        <div class="card">
+          <div class="fiche-top" style="display:grid;gap:14px">
+            <div class="fields">
+              <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
+              <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+            </div>
+            <div class="fields">
+              <div class="field"><label for="o-lang">Noms des accords</label>
+                <select id="o-lang"><option value="fr">Français (Do, Ré, Mi…)</option><option value="en">Anglais (C, D, E…)</option><option value="de">Allemand (C, D, H…)</option></select></div>
+              <div class="field"><label for="o-minor">Accords mineurs</label>
+                <select id="o-minor"><option value="m">« m » (Rém, Dm)</option><option value="-">« - » (Ré-, D-)</option><option value="mi">« mi » (Rémi, Dmi)</option></select></div>
+            </div>
+            <div class="opts">
+              <label><input type="checkbox" id="o-roman"> Afficher les chiffres romains (I, IV, V…)</label>
+              <label><input type="checkbox" id="o-pct" checked> Écrire « % » pour une mesure répétée</label>
+              <label><input type="checkbox" id="o-reps" checked> Regrouper les sections répétées avec des barres de reprise</label>
+            </div>
+            <div class="toolbar">
+              <div class="size"><label for="fs">Taille</label><input type="range" id="fs" min="13" max="28" value="18"></div>
+              <button class="btn small" id="undo" type="button" disabled title="Annuler la dernière modification">↶ Annuler</button>
+              <button class="btn small" id="copy" type="button">Copier</button>
+              <button class="btn small" id="print" type="button" hidden>Imprimer</button>
+              <button class="btn small" id="pdf" type="button" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>PDF</button>
+              <button class="btn small primary" id="save" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
+            </div>
+            <div class="tools" id="tools" hidden>
+              <span class="grp"><label for="o-meter">Mesure</label>
+                <select class="sel" id="o-meter"><option>4/4</option><option>3/4</option><option>2/4</option><option>6/8</option><option>12/8</option></select></span>
+              <span class="grp">1<sup>er</sup> temps <button class="ib" type="button" id="ph-l" aria-label="Déplacer le premier temps d'un temps plus tôt">◀</button><button class="ib" type="button" id="ph-r" aria-label="Déplacer le premier temps d'un temps plus tard">▶</button></span>
+              <span class="grp">Tempo <button class="ib" type="button" id="tp-half" title="Diviser le tempo par deux">÷2</button><button class="ib" type="button" id="tp-dbl" title="Doubler le tempo">×2</button></span>
+              <span class="grp"><label for="o-key">Tonalité</label><select class="sel" id="o-key"></select></span>
+              <button class="btn small" type="button" id="re-sec" title="Refaire le découpage automatique des sections">Refaire les sections</button>
+            </div>
+            <div class="status" id="status" role="status"></div>
+          </div>
+          <div class="paper" id="sheet"></div>
+          <p class="note" id="sheet-help" hidden>Clique sur une mesure pour la corriger ou l'écouter. Clique sur l'étiquette d'une section pour la renommer. Un « ? » marque un accord dont l'app est moins sûre : vérifie-le à l'oreille.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LIBRAIRIE ================= -->
+    <section class="view" id="v-lib" aria-labelledby="h-lib" hidden>
+      <div class="head">
+        <div>
+          <h1 id="h-lib">Librairie</h1>
+          <p class="lib-meta" id="lib-meta">Chargement…</p>
+        </div>
+      </div>
+      <div class="pill">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input class="search" id="q" type="search" placeholder="Chercher une chanson ou un artiste…" aria-label="Chercher dans la librairie">
+      </div>
+      <div class="warn" id="lib-warn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+        <div><strong>Attention : ne supprime pas les données de ce site.</strong>Ta librairie est gardée dans ce navigateur seulement. Si tu effaces les « cookies et données de site » ou si tu utilises la navigation privée, tes grilles seront supprimées. Télécharge les PDF importants pour en garder une copie.</div>
+      </div>
+      <div class="status" id="lib-status" role="status"></div>
+      <div id="lib" style="display:grid;gap:28px"></div>
+      <p class="note" id="lib-where"></p>
+    </section>
+
+    <aside class="promo" aria-label="Run Like a Thief">
+      <img src="../img/run-like-a-thief.jpg" alt="Pochette du single Run Like a Thief" width="96" height="96" loading="lazy">
+      <div class="pt">
+        <p class="pk">Le dernier single du créateur de Chart It</p>
+        <h2>Run Like a Thief · TOM</h2>
+      </div>
+      <div class="pb">
+        <a class="btn" href="https://open.spotify.com/artist/5U2HKZJrJyO5o8Vr5p0pm9">Écouter sur Spotify</a>
+        <a class="btn ghost" href="https://music.apple.com/ca/artist/tom/1762424938">Apple Music</a>
+      </div>
+    </aside>
+    <footer class="foot">
+      <nav aria-label="Autres pages"><a href="../">TOM · accueil</a><a href="../apps/">Apps</a><a href="../ez-lyrics/">EZ Lyrics</a><a href="../musidev/">MusiDev</a></nav>
+      <span>© 2026 <a href="../">Tom Tom Music</a> · Danville, Québec</span>
+    </footer>
+  </main>
+</div>
+
+<!-- Corriger une mesure -->
+<dialog id="d-bar" aria-labelledby="d-bar-h">
+  <form method="dialog" id="d-bar-form">
+    <h2 id="d-bar-h">Mesure 1</h2>
+    <p id="d-bar-p">Écris les accords séparés par des espaces. Un seul accord remplit la mesure; « / » prolonge l'accord d'un temps.</p>
+    <div class="field"><label for="d-bar-in" id="d-bar-lab">Accords</label><input id="d-bar-in" autocomplete="off" spellcheck="false"></div>
+    <div class="err" id="d-bar-err" role="alert"></div>
+    <div class="opts" style="margin-top:6px"><label><input type="checkbox" id="d-bar-all"> Corriger aussi les <span id="d-bar-n">0</span> autres mesures identiques</label></div>
+    <div class="acts">
+      <div class="left">
+        <button class="btn small" type="button" id="d-bar-play">▶ Écouter</button>
+        <button class="btn small" type="button" id="d-bar-sec">Commencer une section ici</button>
+      </div>
+      <button class="btn small" value="cancel" formnovalidate>Annuler</button>
+      <button class="btn small primary" value="ok" id="d-bar-ok">Appliquer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Renommer une section -->
+<dialog id="d-sec" aria-labelledby="d-sec-h">
+  <form method="dialog">
+    <h2 id="d-sec-h">Section</h2>
+    <p>Donne-lui une lettre (A, B…) ou un nom (Couplet, Refrain…).</p>
+    <div class="field"><label for="d-sec-in">Nom de la section</label><input id="d-sec-in" list="sec-names" autocomplete="off"></div>
+    <datalist id="sec-names"><option>Intro</option><option>Couplet</option><option>Pré-refrain</option><option>Refrain</option><option>Pont</option><option>Solo</option><option>Interlude</option><option>Outro</option><option>A</option><option>B</option><option>C</option><option>D</option></datalist>
+    <div class="opts" style="margin-top:8px"><label><input type="checkbox" id="d-sec-all" checked> Renommer aussi les autres sections « <span id="d-sec-old">A</span> »</label></div>
+    <div class="acts">
+      <div class="left"><button class="btn small danger" type="button" id="d-sec-del">Fusionner avec la section précédente</button></div>
+      <button class="btn small" value="cancel" formnovalidate>Annuler</button>
+      <button class="btn small primary" value="ok">Renommer</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="engine.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
