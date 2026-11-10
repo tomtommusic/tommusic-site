@@ -1,77 +1,84 @@
 <!doctype html>
-<html lang="fr-CA" data-lang="fr" data-langs="fr,en" data-key="tom-lang" data-title-fr="Apps · Tom Tom Music" data-title-en="Apps · Tom Tom Music">
+<html lang="fr-CA" data-lang="fr" data-key="tom-lang" data-title-fr="Apps · TOM" data-title-en="Apps · TOM">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Apps · Tom Tom Music</title>
-<meta name="description" content="Les apps de Tom Tom Music pour les musiciens et les profs de musique : MusiDev et EZ Lyrics.">
+<title>Apps · TOM</title>
+<meta name="description" content="Les apps de TOM (Tom Tom Music) pour les musiciens, les chanteurs et les profs de musique : MusiDev et EZ Lyrics.">
+<meta property="og:title" content="Apps · TOM">
+<meta property="og:image" content="https://tommusic.ca/img/route.jpg">
 <link rel="icon" href="../img/favicon-32.png">
-<link rel="stylesheet" href="../style.css">
-<script src="../lang.js"></script>
+<link rel="stylesheet" href="../artist.css?v=7">
+<script src="../lang.js?v=3"></script>
 <style>
-.apphead{padding:64px 0 24px;background:linear-gradient(180deg,#F3ECE1,var(--paper))}
-.apphead h1{font-size:clamp(2.4rem,7vw,3.4rem);margin:0 0 .25em}
-.apphead p{margin:0;color:var(--muted);max-width:56ch;font-size:1.12rem}
-.applist{padding:32px 0 88px}
-.apps{display:grid;gap:20px;list-style:none;margin:0;padding:0}
-.app{display:flex;gap:24px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px}
-.app .ico{width:84px;height:84px;border-radius:20px;flex:none}
-.app .ico.ez{display:grid;place-items:center;background:linear-gradient(150deg,#f3eeff,#e4d8ff)}
-.app .ico.ez svg{width:48px;height:48px}
-.app .body{min-width:0;flex:1}
-.app h2{font-size:1.7rem;margin:0 0 .2em}
-.app p{margin:0 0 .9em;color:var(--muted);max-width:60ch}
-.app .meta{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 1em}
-.btn.violet{background:#6d28d9;color:#fff}
-.btn.violet:hover{background:#5b21b6}
-@media (max-width:560px){.app{flex-direction:column;gap:16px;padding:22px}}
+.ahero{position:relative;background:#203029 url(../img/route.jpg) 62% 70%/cover no-repeat;display:flex;align-items:flex-end;min-height:min(62vh,520px)}
+.ahero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.88) 0%,rgb(14 10 6/.62) 45%,rgb(14 10 6/.2) 80%),linear-gradient(0deg,var(--bg) 0%,transparent 22%)}
+.ahero .wrap{position:relative;padding:130px 0 40px}
+.ahero .kick{color:var(--gold);margin:0 0 14px}
+.ahero h1{margin:0;font:400 clamp(4rem,12vw,7.4rem)/.9 Ultra,Georgia,serif;letter-spacing:.02em;color:var(--cream);filter:url(#rough);text-shadow:0 4px 0 rgb(0 0 0/.35)}
+.ahero .lead{max-width:52ch;margin:22px 0 0;color:var(--cream)}
+.ahero .sign{margin:14px 0 0}
+.apps{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.apps .md{align-items:flex-start;position:relative}
+.apps .md::before{content:"★";position:absolute;right:22px;top:16px;color:var(--gold);font-size:1rem}
+.ico-ez{width:96px;height:96px;border-radius:22px;flex:none;display:grid;place-items:center;background:var(--cream)}
+.ico-ez svg{width:54px;height:54px}
+.apps .meta{color:var(--gold);margin:.2em 0 1.1em;line-height:1.5}
+@media (max-width:760px){.ahero{background-position:70% 50%}.ahero .wrap{padding:110px 0 30px}}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".6" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -18 12.6" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in"/></filter></svg>
+
 <header class="top"><div class="wrap">
-  <a class="logo" href="../">TOM</a>
-  <nav class="nav" aria-label="Sections">
+  <nav class="caps" aria-label="Sections">
+    <a href="../"><span lang="fr">Accueil</span><span lang="en">Home</span></a>
     <a href="../#musique"><span lang="fr">Musique</span><span lang="en">Music</span></a>
+    <a href="./" aria-current="page" style="color:var(--gold)">Apps</a>
     <a href="../#contact">Contact</a>
-    <button class="langbtn" type="button">EN</button>
   </nav>
+  <button class="langbtn caps" type="button">EN</button>
 </div></header>
+
 <main>
-<section class="apphead">
+<section class="ahero">
   <div class="wrap">
-    <p class="tag" style="font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 .6em"><span lang="fr">Par Tom Tom Music</span><span lang="en">By Tom Tom Music</span></p>
+    <p class="caps kick">★ <span lang="fr">Développé par TOM</span><span lang="en">Built by TOM</span> ★</p>
     <h1>Apps</h1>
-    <p lang="fr">Des outils que je développe pour les musiciens, les chanteurs et les profs de musique.</p>
-    <p lang="en">Tools I build for musicians, singers and music teachers.</p>
+    <p class="lead" lang="fr">En plus d'écrire des chansons, je développe des outils pour les musiciens, les chanteurs et les profs de musique. Les voici.</p>
+    <p class="lead" lang="en">Besides writing songs, I build tools for musicians, singers and music teachers. Here they are.</p>
+    <span class="sign">Tom</span>
   </div>
 </section>
-<section class="applist">
+
+<section class="s" style="padding-top:40px">
   <div class="wrap">
+    <h2 class="t"><span class="ttl"><span lang="fr">Mes apps</span><span lang="en">My apps</span></span></h2>
     <ul class="apps">
-      <li class="app">
-        <img class="ico" src="../img/musidev-icon.png" alt="" width="84" height="84">
-        <div class="body">
-          <h2>MusiDev</h2>
-          <p class="meta"><span lang="fr">Windows · iPhone et iPad · Android</span><span lang="en">Windows · iPhone &amp; iPad · Android</span></p>
+      <li class="md">
+        <img src="../img/musidev-icon.png" alt="" width="96" height="96">
+        <div>
+          <h3>MusiDev</h3>
+          <p class="caps meta"><span lang="fr">Windows · iPhone et iPad · Android</span><span lang="en">Windows · iPhone &amp; iPad · Android</span></p>
           <p lang="fr">Une app éducative pour développer l'oreille, lire la musique et pratiquer son instrument, avec des exercices générés au hasard.</p>
           <p lang="en">An educational app to train your ear, read music and practise your instrument, with randomly generated exercises.</p>
           <a class="btn" href="../musidev/"><span lang="fr">Découvrir MusiDev</span><span lang="en">Discover MusiDev</span></a>
         </div>
       </li>
-      <li class="app">
-        <div class="ico ez" aria-hidden="true"><svg viewBox="0 0 48 48"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9f7aea"/><stop offset="1" stop-color="#6d3be0"/></linearGradient></defs><path fill="url(#g)" d="M40 5.5v26.2a7 7 0 1 1-4-6.3V14.6l-18 4v17.1a7 7 0 1 1-4-6.3V10.2a2 2 0 0 1 1.6-2L37.6 3.5A2 2 0 0 1 40 5.5z"/></svg></div>
-        <div class="body">
-          <h2>EZ Lyrics</h2>
-          <p class="meta"><span lang="fr">Gratuit · Dans le navigateur · En français</span><span lang="en">Free · In your browser · In French</span></p>
+      <li class="md">
+        <div class="ico-ez" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#16110C" d="M40 5.5v26.2a7 7 0 1 1-4-6.3V14.6l-18 4v17.1a7 7 0 1 1-4-6.3V10.2a2 2 0 0 1 1.6-2L37.6 3.5A2 2 0 0 1 40 5.5z"/></svg></div>
+        <div>
+          <h3>EZ Lyrics</h3>
+          <p class="caps meta"><span lang="fr">Gratuit · Dans le navigateur · En français</span><span lang="en">Free · In your browser · In French</span></p>
           <p lang="fr">Colle une feuille d'accords : EZ Lyrics enlève les accords, garde les paroles et les sections pour le chanteur, puis te donne un PDF propre à imprimer.</p>
           <p lang="en">Paste a chord sheet: EZ Lyrics removes the chords, keeps the lyrics and song sections for the singer, and gives you a clean PDF to print.</p>
-          <a class="btn violet" href="../ez-lyrics/"><span lang="fr">Ouvrir EZ Lyrics</span><span lang="en">Open EZ Lyrics</span></a>
+          <a class="btn" href="../ez-lyrics/"><span lang="fr">Ouvrir EZ Lyrics</span><span lang="en">Open EZ Lyrics</span></a>
         </div>
       </li>
     </ul>
   </div>
 </section>
 </main>
-<footer><div class="wrap"><span>© 2026 <a href="../" style="color:inherit">Tom Tom Music</a></span><span>Danville, Québec</span></div></footer>
+<footer><div class="wrap"><span>© 2026 Tom Tom Music</span><span>Danville, Québec</span></div></footer>
 </body>
 </html>
