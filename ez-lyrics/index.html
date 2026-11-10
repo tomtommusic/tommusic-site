@@ -347,7 +347,7 @@ function cleanText(t){
     .replace(/^\s*```.*$/gm,'')
     .replace(/\r/g,'');
 }
-const isChordLine = l => { const t = l.trim().split(/\s+/).filter(Boolean); return t.length>0 && t.every(w=>CHORD.test(w)||FILLER.test(w)) && t.some(w=>CHORD.test(w)); };
+const isChordLine = l => { const t = l.replace(/\(\s*[x0-9]{4,6}\s*\)/gi,' ').trim().split(/\s+/).filter(Boolean); return t.length>0 && t.every(w=>CHORD.test(w)||FILLER.test(w)) && t.some(w=>CHORD.test(w)); };
 const SECTION = /^\s*\[([^\]]+)\]\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-?chorus|pr[ée]-?refrain|chorus|refrain|bridge|pont|solo|outro|interlude|instrumental|break|coda)\b[^a-z]*$/i;
 // Restes de l'interface des sites d'accords (Ultimate Guitar, etc.)
 const UI_JUNK = [
@@ -501,7 +501,7 @@ function buildPdf(){
   const secH = Math.max(9, fs - 3) * 1.7;
   const blockHeight = b => {
     doc.setFont('helvetica','normal'); doc.setFontSize(fs);
-    let h = 4; if(b.name) h += secH + 12;
+    let h = 4; if(b.name) h += secH + 12; else h += fs * 0.9;
     for(const l of b.lines) h += l.trim() ? doc.splitTextToSize(pdfSafe(l), maxW).length * fs * 1.35 : fs * 0.6;
     return h;
   };
@@ -511,6 +511,7 @@ function buildPdf(){
     const empty = !b.lines.length;
     if((empty && !o.inst) || (empty && !b.name)) continue;
     { const bh = blockHeight(b); if(o.keep && y > M + 1 && y + bh > bottom && bh <= bottom - M) newPage(); }
+    if(!b.name && y > M + 1) y += fs * 0.9; // espace entre les strophes
     if(b.name){
       const label = pdfSafe(b.name.toUpperCase() + (empty ? '  (instrumental)' : ''));
       const sz = Math.max(9, fs - 3);
