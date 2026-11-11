@@ -342,6 +342,7 @@ const LOOKALIKE = {'а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x
   'ο':'o','α':'a','ε':'e','ν':'v','ρ':'p','Α':'A','Β':'B','Ε':'E','Η':'H','Ι':'I','Κ':'K','Μ':'M','Ν':'N','Ο':'O','Ρ':'P','Τ':'T','Χ':'X','Υ':'Y','Ζ':'Z'};
 function cleanText(t){
   return t.normalize('NFC')
+    .replace(/^\s*```.*$/gm,'')
     .replace(/[​-‍⁠﻿­]/g,'')
     .replace(/[Ͱ-ϿЀ-ӿԀ-ԯɡ]/g, c => LOOKALIKE[c] || c)
     .replace(/ /g,' ')
@@ -351,13 +352,14 @@ function cleanText(t){
     .replace(/\r/g,'');
 }
 const isChordLine = l => { const t = l.replace(/\(\s*[x0-9]{4,6}\s*\)/gi,' ').trim().split(/\s+/).filter(Boolean); return t.length>0 && t.every(w=>CHORD.test(w)||FILLER.test(w)) && t.some(w=>CHORD.test(w)); };
-const SECTION = /^\s*\[([^\]]+)\]\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-?chorus|pr[ée]-?refrain|chorus|refrain|bridge|pont|solo|outro|interlude|instrumental|break|coda)\b[^a-z]*$/i;
+const SECTION = /^\s*\[([^\]]+)\]\s*(\([^)]*\))?\s*$|^\s*(intro|verse|couplet|pre-?chorus|post-?chorus|pr[ée]-?refrain|chorus|refrain|bridge|pont|solo|outro|interlude|instrumental|break|coda)\b[^a-z]*$/i;
 // Restes de l'interface des sites d'accords (Ultimate Guitar, etc.)
 const UI_JUNK = [
   /^\s*[\d.,]+\s*(views?|vues)(\d|\s|$)/i, /^\s*[\d.,]+\s*(saves?|comments?|commentaires?|ratings?|votes?)\s*$/i,
   /^\s*(author|auteur|difficulty|difficult[ée]|speed|vitesse|tab by|last (edit|update)|derni[eè]re mise [àa] jour|rating)\s*:?/i,
   /^\s*(tempo|bpm|metronome|m[ée]tronome|transpose|transposer|autoscroll|auto ?scroll|simplify|simplifier|font|print|imprimer|edit|report bad tab|add to favou?rites?|favou?rites?|chords?|accords?|strumming pattern|x|\u00D7|\+|-)\s*$/i,
   /^\s*[+-]?\d+([.,]\d+)?\s*$/,
+  /^\s*[a-gA-G][#b]?\s*[|:][\s\-0-9xXhpbrsvt\/\\~^()|.*=<>]*$/,   // lignes de tablature : e|--5---7--|
   /^\s*(partitions?|paroles et musique|paroles|musique|auteurs?|compositeurs?|interpr[eè]te|accords? utilis[ée]s|tablatures?)\s*:/i,
   /^\s*([Tt]onalit[ée]|TONALIT[ÉE]|[Kk]ey|KEY)\s*:\s*([A-G][#b]?m?\s*){2,}$/
 ];
@@ -410,7 +412,11 @@ function convert(text, o){
     if(/^\s*accords?\s+(de|pour|[àa] la|du|au)\s+(la\s+)?(guitare|piano|ukul[ée]l[ée]|mandoline|basse|banjo)\s*:?\s*$/i.test(raw)) break;
     if(isChordLine(raw)) continue;
     const s = raw.match(SECTION);
-    if(s){ flush(); cur = {t:'sec', name:(s[1]||s[2]).trim(), lines:[]}; continue; }
+    if(s){ flush();
+      let nm = (s[1]||s[3]).trim();
+      // Note après le titre : garder « (x2) », ignorer les consignes pour la guitare
+      if(s[2] && !/strum|picking|palm|mute|guitar|guitare|capo|tab|gratt|arp[eè]g/i.test(s[2])) nm += ' ' + s[2].trim();
+      cur = {t:'sec', name:nm, lines:[]}; continue; }
     if(!cur) cur = {t:'sec', name:null, lines:[]};
     let l = raw.replace(/\s*\((?:[x0-9]{4,6}|(?:[x0-9]{1,2}[\s\-]){3,5}[x0-9]{1,2})\)\s*/gi, m => /^\s|\s$/.test(m) ? ' ' : '');
     if(raw.trim() && !l.trim()) continue;
@@ -504,7 +510,7 @@ function render(){
     const box = mk('div', b.lines.length > 40 ? 'block long' : 'block','');
     if(b.name){
       const d = mk('div','',''+'',box); const s = mk('div','sec',b.name,d);
-      if(empty) mk('span','inst',' · instrumental',s);
+      if(empty && !/instrumental/i.test(b.name)) mk('span','inst',' · instrumental',s);
     }
     for(const l of b.lines){ if(l.trim()) mk('p','l',l,box); else mk('div','gap','',box); }
   }
@@ -516,7 +522,7 @@ function plainText(){
   for(const b of state.sections){
     const empty = !b.lines.length;
     if((empty && !o.inst) || (empty && !b.name)) continue;
-    if(b.name) out.push(`[${b.name}]${empty?' (instrumental)':''}`);
+    if(b.name) out.push(`[${b.name}]${empty && !/instrumental/i.test(b.name)?' (instrumental)':''}`);
     out.push(...b.lines, '');
   }
   return out.join('\n').replace(/\n{3,}/g,'\n\n').trim();
@@ -562,7 +568,7 @@ function buildPdf(){
     { const bh = blockHeight(b); if(o.keep && y > M + 1 && y + bh > bottom && bh <= bottom - M) newPage(); }
     if(!b.name && y > M + 1) y += fs * 0.9; // espace entre les strophes
     if(b.name){
-      const label = pdfSafe(b.name.toUpperCase() + (empty ? '  (instrumental)' : ''));
+      const label = pdfSafe(b.name.toUpperCase() + (empty && !/instrumental/i.test(b.name) ? '  (instrumental)' : ''));
       const sz = Math.max(9, fs - 3);
       need(secH + (empty ? 0 : fs * 1.35)); y += 6;
       doc.setFont('helvetica','bold'); doc.setFontSize(sz);
