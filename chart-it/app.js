@@ -96,7 +96,7 @@ let hist = [];
 const bpb = () => METERS[S.meter] || 4;
 const curKey = () => (S && (S.keyOverride || S.key)) || null;
 function viewOpts() {
-  return { lang: $('o-lang').value, minor: $('o-minor').value, roman: $('o-roman').checked, pct: $('o-pct').checked, reps: $('o-reps').checked, pass: $('o-pass').value };
+  return { lang: $('o-lang').value, minor: $('o-minor').value, roman: $('o-roman').checked, pct: $('o-pct').checked, slash: $('o-slash').checked, reps: $('o-reps').checked, pass: $('o-pass').value };
 }
 function decodeOpts() { return { vocab: $('o-vocab').value, minBeats: +$('o-detail').value, inversions: $('o-inv').checked }; }
 function getBars() { return S ? E.buildBars(S.chords, bpb(), S.phase) : []; }
@@ -194,7 +194,7 @@ function barGroups(bar) {
   const half = groups.length === 2 && bar.beats.length % 2 === 0 && groups[0].n === bar.beats.length / 2;
   const small = $('o-pass').value === 'small';
   groups.forEach(g => {
-    g.sl = groups.length === 1 || half ? 0 : g.n - 1;
+    g.sl = !$('o-slash').checked || groups.length === 1 || half ? 0 : g.n - 1;
     const pAt = k => { const c = S.chords[g.idx[k]], pc = k > 0 ? S.chords[g.idx[k - 1]] : S.chords[g.idx[0] - 1]; return small && c.p && pKey(c) !== pKey(pc) ? Object.assign({}, c.p, { c: c.c }) : null; };
     g.pre = pAt(0);
     g.rest = [];
@@ -1001,7 +1001,7 @@ function openItem(it, thenPdf) {
   if (!S.edited) { S.raw = S.chords; S.chords = E.tidyChords(S.raw, bpb(), S.phase, passOpts()); }
   $('f-title').value = it.title; $('f-artist').value = it.artist || '';
   $('f-title').dataset.touched = '1'; $('f-artist').dataset.touched = '1';
-  if (it.view) { $('o-lang').value = it.view.lang; $('o-minor').value = it.view.minor; $('o-roman').checked = !!it.view.roman; $('o-pct').checked = it.view.pct !== false; $('o-reps').checked = it.view.reps !== false; }
+  if (it.view) { $('o-lang').value = it.view.lang; $('o-minor').value = it.view.minor; $('o-roman').checked = !!it.view.roman; $('o-pct').checked = it.view.pct !== false; $('o-slash').checked = !!it.view.slash; $('o-reps').checked = it.view.reps !== false; }
   const src = S.source;
   if (src && src.type === 'youtube' && src.id) loadYouTube(src.id, true);
   else {
@@ -1097,7 +1097,7 @@ $('cancel').onclick = cancelCapture;
 $('analyze-file').onclick = analyzeFile;
 ['o-vocab', 'o-detail', 'o-inv'].forEach(id => $(id).addEventListener('change', () => redecode('Grille recalculée avec les nouveaux réglages.')));
 ['o-lang', 'o-minor'].forEach(id => $(id).addEventListener('change', () => { if (S) fillKeySelect(); render(); renderLib(); }));
-['o-roman', 'o-pct', 'o-reps'].forEach(id => $(id).addEventListener('change', render));
+['o-roman', 'o-pct', 'o-slash', 'o-reps'].forEach(id => $(id).addEventListener('change', render));
 $('o-pass').addEventListener('change', () => {
   if (!S) return;
   // « ignorer » et « en petit » ne changent que l'affichage; « garder comme accords » refait la grille
