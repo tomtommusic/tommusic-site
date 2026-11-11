@@ -473,9 +473,47 @@
      fragment d'un seul temps au bord de la mesure : « Do / / Sim | Sim » ou « Do Lam / / » après une mesure de Do.
      Une grille de style Real Book écrit ces accords sur le premier temps : | Do | Sim | et | Lam |.
      Retourne un nouveau tableau; l'original (analyse brute) n'est pas modifié. */
-  function tidyChords(chords, beatsPerBar, phase) {
+  function tidyChords(chords, beatsPerBar, phase, opts) {
     const out = chords.map(c => c && Object.assign({}, c));
-    if (beatsPerBar < 3) return out;
+    if (beatsPerBar >= 3) snapToDownbeats(out, beatsPerBar, phase);
+    if (!opts || opts.passing !== false) absorbPassing(out, beatsPerBar, phase);
+    return out;
+  }
+
+  /* Notes de passage à la basse : un accord court (une demi-mesure au plus) qui ne change que la basse d'un
+     accord voisin (Fa  Fa/La | Sol : la basse La passe vers Sol) est rendu à cet accord. Un accord de fondamentale
+     différente (Ré/Fa♯ avant Sol, par exemple) est gardé : c'est de l'harmonie, pas une note de passage.
+     L'accord d'origine reste dans le champ « p » pour pouvoir l'afficher en petit. */
+  function absorbPassing(out, beatsPerBar, phase) {
+    const bars = buildBars(out, beatsPerBar, phase), down = new Set(bars.filter(b => !b.pickup).map(b => b.start));
+    const short = Math.max(1, Math.floor(beatsPerBar / 2));
+    const minor = c => MINOR_Q.has(c.q);
+    const clean = c => { const o = Object.assign({}, c); delete o.p; return o; };
+    for (let guard = 0; guard < 400; guard++) {
+      const segs = [];
+      for (let i = 0; i < out.length;) { let j = i; while (j < out.length && chordKey(out[j]) === chordKey(out[i])) j++; segs.push({ a: i, b: j, c: out[i] }); i = j; }
+      let done = true;
+      for (let k = 0; k < segs.length; k++) {
+        const s = segs[k]; if (!s.c || s.c.r < 0 || s.b - s.a > short) continue;
+        const P = k > 0 && segs[k - 1].c && segs[k - 1].c.r >= 0 ? segs[k - 1] : null;
+        const N = k + 1 < segs.length && segs[k + 1].c && segs[k + 1].c.r >= 0 ? segs[k + 1] : null;
+        const same = X => X && X.c.r === s.c.r && minor(X.c) === minor(s.c);
+        // l'accord placé sur le premier temps reste l'accord principal, sauf s'il est renversé et que son voisin ne l'est pas
+        const onDown = down.has(s.a);
+        let into = null;
+        if (same(P) && !onDown) into = P;
+        else if (same(N) && (!onDown || (s.c.b >= 0 && N.c.b < 0))) into = N;
+        else if (same(P) && onDown && s.c.b >= 0 && P.c.b < 0) into = P;
+        if (!into) continue;
+        const base = clean(into.c);
+        for (let i = s.a; i < s.b; i++) { const orig = out[i].p || { r: out[i].r, q: out[i].q, b: out[i].b }; out[i] = Object.assign({}, base, { p: orig }); }
+        done = false; break;
+      }
+      if (done) break;
+    }
+  }
+
+  function snapToDownbeats(out, beatsPerBar, phase) {
     const bars = buildBars(out, beatsPerBar, phase), K = i => chordKey(out[i]);
     const groupsOf = bar => { const g = []; for (const i of bar.beats) { const l = g[g.length - 1]; if (l && K(l.i) === K(i)) l.n++; else g.push({ i, n: 1 }); } return g; };
     for (let bi = 0; bi < bars.length; bi++) {
@@ -494,7 +532,6 @@
       if (g.length >= 2 && g[g.length - 1].n === 1 && g[g.length - 2].n >= 2 && next && !next.pickup && K(next.start) === K(last) && out[last].r >= 0 && out[g[g.length - 2].i].r >= 0)
         out[last] = Object.assign({}, out[g[g.length - 2].i]);
     }
-    return out;
   }
 
   // Retirer le silence au début et à la fin (accords « N.C. »)
@@ -581,7 +618,7 @@
     const dec = decode(feat, beats, opts);
     const low = beats.map(t => { const f = Math.round(t * feat.onset.fps); let m = 0; for (let d = -2; d <= 2; d++) m = Math.max(m, feat.onset.low[f + d] || 0); return m; });
     const mp = meterAndPhase(dec.chords, low);
-    const chords = tidyChords(dec.chords, mp.beatsPerBar, mp.phase);
+    const chords = tidyChords(dec.chords, mp.beatsPerBar, mp.phase, opts);
     return { feat, beats, bpm, chords, raw: dec.chords, key: dec.key, beatsPerBar: mp.beatsPerBar, phase: mp.phase, tuning: feat.tuning };
   }
 

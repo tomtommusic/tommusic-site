@@ -96,12 +96,13 @@ let hist = [];
 const bpb = () => METERS[S.meter] || 4;
 const curKey = () => (S && (S.keyOverride || S.key)) || null;
 function viewOpts() {
-  return { lang: $('o-lang').value, minor: $('o-minor').value, roman: $('o-roman').checked, pct: $('o-pct').checked, reps: $('o-reps').checked };
+  return { lang: $('o-lang').value, minor: $('o-minor').value, roman: $('o-roman').checked, pct: $('o-pct').checked, reps: $('o-reps').checked, pass: $('o-pass').value };
 }
 function decodeOpts() { return { vocab: $('o-vocab').value, minBeats: +$('o-detail').value, inversions: $('o-inv').checked }; }
 function getBars() { return S ? E.buildBars(S.chords, bpb(), S.phase) : []; }
 // Accords bruts de l'analyse → accords ramenés sur les premiers temps (seulement si l'utilisateur n'a rien corrigé)
-function retidy() { if (S && S.raw && !S.edited) S.chords = E.tidyChords(S.raw, bpb(), S.phase); }
+const passOpts = () => ({ passing: $('o-pass').value !== 'keep' });
+function retidy() { if (S && S.raw && !S.edited) S.chords = E.tidyChords(S.raw, bpb(), S.phase, passOpts()); }
 function autoSections() {
   const bars = getBars();
   S.sections = E.findSections(bars, S.chords, curKey()).map(s => ({ start: s.start, label: s.label }));
@@ -121,7 +122,8 @@ function setStatus(el, text, kind, actionLabel, action) {
 }
 
 /* ================= Mise en page de la grille ================= */
-const barKey = bar => bar.beats.map(i => E.chordKey(S.chords[i])).join(',') + (bar.pickup ? 'p' : '');
+const pKey = c => c && c.p ? '(' + c.p.r + ':' + c.p.q + ':' + c.p.b + ')' : '';
+const barKey = bar => { const sm = $('o-pass').value === 'small'; return bar.beats.map(i => E.chordKey(S.chords[i]) + (sm ? pKey(S.chords[i]) : '')).join(',') + (bar.pickup ? 'p' : ''); };
 function secRanges(bars) {
   let secs = (S.sections || []).filter(s => s.start < bars.length).sort((a, b) => a.start - b.start);
   if (!secs.length || secs[0].start !== 0) secs = [{ start: 0, label: secs.length ? 'Intro' : 'A' }, ...secs];
@@ -129,18 +131,31 @@ function secRanges(bars) {
 }
 function layout(bars, secs, o) {
   const keys = sec => bars.slice(sec.s, sec.e).map(barKey), eq = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+  // moitiés d'une section d'au moins 8 mesures (paire); une moitié faite d'un seul accord ne vaut pas une reprise
+  const split = sec => { const h = (sec.e - sec.s) / 2; return [{ label: sec.label, s: sec.s, e: sec.s + h }, { label: sec.label, s: sec.s + h, e: sec.e }]; };
+  const halves = sec => {
+    const L = sec.e - sec.s; if (L < 8 || L % 2) return null;
+    const K = keys(sec), h = L / 2, A = K.slice(0, h), B = K.slice(h);
+    if (new Set(A).size < 2) return null;
+    let common = 0; while (common < h && A[common] === B[common]) common++;
+    return { h, same: common === h, common };
+  };
   const out = [];
   for (let i = 0; i < secs.length;) {
     const a = secs[i], A = keys(a);
     if (o.reps && A.length >= 2) {
       let j = i; while (j + 1 < secs.length && secs[j + 1].label === a.label && eq(keys(secs[j + 1]), A)) j++;
-      if (j > i) { out.push({ type: 'rep', insts: secs.slice(i, j + 1) }); i = j + 1; continue; }
+      if (j > i) { const run = secs.slice(i, j + 1), hv = halves(a); out.push({ type: 'rep', insts: hv && hv.same ? run.flatMap(x => split(x)) : run }); i = j + 1; continue; }
       const b = secs[i + 1];
       if (b && b.label === a.label && b.e - b.s === a.e - a.s) {
         const B = keys(b); let p = 0; while (p < A.length && A[p] === B[p]) p++;
         if (p >= 2 && p < A.length && A.length - p <= 2) { out.push({ type: 'volta', insts: [a, b], common: p }); i += 2; continue; }
       }
     }
+    // à l'intérieur d'une section : deux moitiés pareilles → reprise ×2; pareilles sauf la fin → 1re et 2e fins
+    const hv = o.reps ? halves(a) : null;
+    if (hv && hv.same) { out.push({ type: 'rep', insts: split(a) }); i++; continue; }
+    if (hv && hv.common >= 2 && hv.h - hv.common <= 2) { out.push({ type: 'volta', insts: split(a), common: hv.common }); i++; continue; }
     out.push({ type: 'one', insts: [a] }); i++;
   }
   // cellules de chaque groupe
@@ -155,6 +170,9 @@ function layout(bars, secs, o) {
       for (let k = 0; k < g.common; k++) cells.push({ bars: [a.s + k, b.s + k] });
       for (let k = g.common; k < n; k++) cells.push({ bars: [a.s + k], volta: '1.', vfirst: k === g.common });
       cells[cells.length - 1].re = true;
+      // la 2e fin commence sur la ligne suivante, alignée sous la 1re fin (cases vides avant)
+      const pad = (4 - cells.length % 4) % 4 + g.common % 4;
+      for (let k = 0; k < pad; k++) cells.push({ bars: [], blank: true });
       for (let k = g.common; k < n; k++) cells.push({ bars: [b.s + k], volta: '2.', vfirst: k === g.common });
       cells[0].rs = true;
     }
@@ -165,27 +183,27 @@ function layout(bars, secs, o) {
   });
   return out;
 }
-// Contenu d'une mesure : [{c, n}] (accord + nombre de temps) ou jetons par temps
-function barTokens(bar) {
-  const groups = [];
-  for (const i of bar.beats) { const c = S.chords[i], l = groups[groups.length - 1]; if (l && E.chordKey(l.c) === E.chordKey(c)) l.n++; else groups.push({ c, n: 1 }); }
-  const n = bar.beats.length;
-  if (groups.length === 1) return [{ c: groups[0].c }];
-  if (groups.length === 2 && n % 2 === 0 && groups[0].n === n / 2) return groups.map(g => ({ c: g.c }));
-  const out = []; groups.forEach(g => { out.push({ c: g.c }); for (let k = 1; k < g.n; k++) out.push({ slash: true }); });
-  return out;
-}
-// Même contenu, regroupé par accord : [{c, n (temps), sl (barres obliques à afficher)}]
+// Même contenu, regroupé par accord : [{c, n (temps), sl (barres obliques), pre, rest}]
 // Deux accords d'égale durée s'écrivent sans barre oblique (« Do Lam »), comme dans un Real Book.
+// En mode « notes de passage en petit », pre = accord de passage joué avant l'accord principal du groupe et
+// rest = un jeton par temps suivant ({sl} barre oblique, {p} accord de passage entre parenthèses, null rien).
 function barGroups(bar) {
   const groups = [];
-  for (const i of bar.beats) { const c = S.chords[i], l = groups[groups.length - 1]; if (l && E.chordKey(l.c) === E.chordKey(c)) l.n++; else groups.push({ c, n: 1 }); }
+  bar.beats.forEach(i => { const c = S.chords[i], l = groups[groups.length - 1]; if (l && E.chordKey(l.c) === E.chordKey(c)) { l.n++; l.idx.push(i); } else groups.push({ c, n: 1, idx: [i] }); });
   const half = groups.length === 2 && bar.beats.length % 2 === 0 && groups[0].n === bar.beats.length / 2;
-  groups.forEach(g => { g.sl = groups.length === 1 || half ? 0 : g.n - 1; });
+  const small = $('o-pass').value === 'small';
+  groups.forEach(g => {
+    g.sl = groups.length === 1 || half ? 0 : g.n - 1;
+    const pAt = k => { const c = S.chords[g.idx[k]], pc = k > 0 ? S.chords[g.idx[k - 1]] : S.chords[g.idx[0] - 1]; return small && c.p && pKey(c) !== pKey(pc) ? Object.assign({}, c.p, { c: c.c }) : null; };
+    g.pre = pAt(0);
+    g.rest = [];
+    for (let k = 1; k < g.n; k++) { const pp = pAt(k); g.rest.push(pp ? { p: pp } : g.sl ? { sl: true } : null); }
+    if (!g.rest.some(t => t)) g.rest = [];
+  });
   return groups;
 }
 function barText(bar, o, key) {
-  return barTokens(bar).map(t => t.slash ? '/' : chordName(t.c, o, key)).join(' ');
+  return barGroups(bar).map(g => [g.pre ? '(' + chordName(g.pre, o, key) + ')' : '', g.c.r < 0 ? 'N.C.' : chordName(g.c, o, key), ...g.rest.map(t => !t ? '' : t.sl ? '/' : '(' + chordName(t.p, o, key) + ')')].filter(Boolean).join(' ')).join(' ');
 }
 
 /* ================= Rendu de la feuille ================= */
@@ -228,6 +246,7 @@ function render() {
     let row = null;
     g.cells.forEach((cell, ci) => {
       if (ci % 4 === 0) row = mk('div', 'row', null, rows);
+      if (cell.blank) { mk('div', 'bar blank', null, row); return; }
       const bar = BARS[cell.bars[0]], b = mk('button', 'bar', null, row); b.type = 'button';
       b.dataset.bars = cell.bars.join(',');
       if (cell.rs) { b.classList.add('rs'); mk('span', 'rpl', null, b); }
@@ -241,6 +260,7 @@ function render() {
       else for (const g of barGroups(bar)) {
         // un groupe par accord : sa largeur suit son nombre de temps, ses barres obliques se répartissent après le nom
         const gr = mk('span', 'cg', null, b); gr.style.flex = g.n + ' 1 auto';
+        if (g.pre) mk('span', 'ps pre', '(' + chordName(g.pre, o, key) + ')', gr);
         const tk = mk('span', 'tk', null, gr);
         if (g.c.r < 0) mk('span', 'nc', 'N.C.', tk);
         else {
@@ -248,7 +268,11 @@ function render() {
           if (g.c.c < 0.35) { const qm = mk('span', 'qm', '?', ch); qm.title = 'Accord à vérifier'; }
           if (o.roman) mk('span', 'rn', roman(g.c, key), tk);
         }
-        for (let k = 0; k < g.sl; k++) mk('span', 'sl', '/', gr);
+        for (const t of g.rest) {
+          const sp = mk('span', 'slot', null, gr);
+          if (t && t.sl) mk('span', 'sl', '/', sp);
+          else if (t && t.p) mk('span', 'ps', '(' + chordName(t.p, o, key) + ')', sp);
+        }
       }
       b.setAttribute('aria-label', `Mesure ${cell.bars[0] + 1} : ${txt}${bar.beats.some(i => S.chords[i].c < 0.35) ? ' (à vérifier)' : ''}`);
       b.onclick = () => openBarDialog(cell.bars);
@@ -278,13 +302,14 @@ function plainText() {
   out.push('Forme : ' + secRanges(BARS).map(s => s.label).join(' – '), '');
   for (const g of GROUPS) {
     out.push(`[${g.insts[0].label}]` + (g.type === 'rep' ? ` ×${g.insts.length}` : ''));
-    const parts = g.cells.map((cell, ci) => {
+    const cellsT = g.cells.filter(c => !c.blank);
+    const parts = cellsT.map((cell, ci) => {
       let t = barText(BARS[cell.bars[0]], o, key);
       if (cell.volta && cell.vfirst) t = cell.volta + ' ' + t;
       return t;
     });
     for (let i = 0; i < parts.length; i += 4) {
-      const seg = g.cells.slice(i, i + 4);
+      const seg = cellsT.slice(i, i + 4);
       let line = (seg[0].rs ? '||: ' : '| ') + parts.slice(i, i + 4).join(' | ');
       const lc = seg[seg.length - 1];
       line += lc.re ? ' :||' : lc.end ? ' ||' : ' |';
@@ -360,6 +385,7 @@ async function buildPdf() {
     doc.text(txt(n + ' mes.' + (g.type === 'rep' ? '  ×' + g.insts.length : '')), M, top + 2 + lh + fs * 0.85);
     doc.setTextColor(0);
     g.cells.forEach((cell, ci) => {
+      if (cell.blank) return;
       const r = Math.floor(ci / 4), col = ci % 4, x = gridX + col * bw, yy = top + r * (rowH + rowGap), bar = BARS[cell.bars[0]];
       const lastInRow = col === 3 || ci === g.cells.length - 1;
       // barre de gauche
@@ -384,25 +410,34 @@ async function buildPdf() {
       // une seule taille pour tous les accords de la mesure; l'espace suit le nombre de temps de chaque accord
       const gs = barGroups(bar), totalN = gs.reduce((a, g) => a + g.n, 0);
       const label = g => g.c.r < 0 ? 'N.C.' : txt(chordName(g.c, o, key));
-      const natural = sz => { font('bold', sz); return gs.map(g => doc.getTextWidth(label(g)) + (g.c.c < 0.35 && g.c.r >= 0 ? sz * 0.45 : 0) + g.sl * sz * 0.75); };
+      const pName = c => '(' + txt(chordName(c, o, key)) + ')';
+      const tokW = (t, sz) => { if (!t) return sz * 0.3; if (t.sl) return sz * 0.75; font('bold', sz * 0.62); const w = doc.getTextWidth(pName(t.p)) + sz * 0.3; return w; };
+      const preW = (g, sz) => { if (!g.pre) return 0; font('bold', sz * 0.62); return doc.getTextWidth(pName(g.pre)) + sz * 0.25; };
+      const headW = (g, sz) => { font('bold', sz); return preW(g, sz) + doc.getTextWidth(label(g)) + (g.c.c < 0.35 && g.c.r >= 0 ? sz * 0.45 : 0); };
+      const natural = sz => gs.map(g => headW(g, sz) + g.rest.reduce((a, t) => a + tokW(t, sz), 0));
       let size = fs * 1.2, nat = natural(size), gap = size * 0.35, need = nat.reduce((a, v) => a + v, 0) + gap * (gs.length - 1);
       if (need > cw) { size = Math.max(fs * 0.62, size * cw / need); nat = natural(size); gap = size * 0.35; need = nat.reduce((a, v) => a + v, 0) + gap * (gs.length - 1); }
       const extra = Math.max(0, cw - need);
       let gx = pl;
       gs.forEach((g, k) => {
         const gw = nat[k] + extra * g.n / totalN, name = label(g);
+        let hx = gx + 1;
+        if (g.pre) { font('bold', size * 0.62); doc.setTextColor(110); doc.text(pName(g.pre), hx, cy); doc.setTextColor(0); hx += preW(g, size); }
         font('bold', g.c.r < 0 ? size * 0.7 : size);
         if (g.c.r < 0) doc.setTextColor(90);
-        doc.text(name, gx + 1, cy); doc.setTextColor(0);
+        doc.text(name, hx, cy); doc.setTextColor(0);
         const nw = doc.getTextWidth(name);
-        if (g.c.r >= 0 && g.c.c < 0.35) { font('bold', size * 0.6); doc.text('?', gx + 1 + nw + 1, cy - size * 0.38); }
+        if (g.c.r >= 0 && g.c.c < 0.35) { font('bold', size * 0.6); doc.text('?', hx + nw + 1, cy - size * 0.38); }
         if (o.roman && g.c.r >= 0) { font('bold', fs * 0.62); doc.setTextColor(80); doc.text(txt(roman(g.c, key)), gx + 1, yy + rowH * 0.85); doc.setTextColor(0); }
-        // barres obliques réparties dans le reste de la place du groupe
-        if (g.sl) {
-          const x0 = gx + nat[k] - g.sl * size * 0.75, slot = (gx + gw - x0) / g.sl;
-          font('normal', size); doc.setTextColor(110);
-          for (let q = 0; q < g.sl; q++) doc.text('/', x0 + slot * (q + 0.5), cy, { align: 'center' });
-          doc.setTextColor(0);
+        // temps suivants : barres obliques ou accords de passage, chacun dans une case égale du reste du groupe
+        if (g.rest.length) {
+          const x0 = gx + headW(g, size), slot = (gx + gw - x0) / g.rest.length;
+          g.rest.forEach((t, q) => {
+            if (!t) return;
+            if (t.sl) { font('normal', size); doc.setTextColor(110); doc.text('/', x0 + slot * (q + 0.5), cy, { align: 'center' }); }
+            else { font('bold', size * 0.62); doc.setTextColor(110); doc.text(pName(t.p), x0 + slot * q + size * 0.15, cy); }
+            doc.setTextColor(0);
+          });
         }
         gx += gw + gap;
       });
@@ -726,7 +761,7 @@ function redecode(reason) {
   const wasEdited = S.edited;
   pushHist();
   const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts());
-  S.raw = dec.chords; S.key = dec.key; S.edited = false; S.chords = E.tidyChords(S.raw, bpb(), S.phase);
+  S.raw = dec.chords; S.key = dec.key; S.edited = false; S.chords = E.tidyChords(S.raw, bpb(), S.phase, passOpts());
   autoSections(); syncTools(); render();
   setStatus($('status'), reason + (wasEdited ? ' Tes corrections ont été remplacées.' : ''), 'ok', 'Annuler', undo);
 }
@@ -773,7 +808,7 @@ function changeTempo(f) {
     S.beats = dbl(S.beats); S.chords = ch; if (RUN) RUN.audioBeats = dbl(RUN.audioBeats);
     S.phase = (2 * S.phase) % n; S.bpm *= 2;
   }
-  if (RUN && !S.edited) { const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts()); S.raw = dec.chords; S.chords = E.tidyChords(S.raw, n, S.phase); } else S.raw = null;
+  if (RUN && !S.edited) { const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts()); S.raw = dec.chords; S.chords = E.tidyChords(S.raw, n, S.phase, passOpts()); } else S.raw = null;
   autoSections(); render();
   setStatus($('status'), `Tempo ${f === 2 ? 'doublé' : 'divisé par deux'} (♩ = ${Math.round(S.bpm)}). Les sections ont été refaites.`, 'ok', 'Annuler', undo);
 }
@@ -900,7 +935,7 @@ function tickNow(force) {
   NOW = bi;
   document.querySelectorAll('#sheet .bar.now').forEach(b => b.classList.remove('now'));
   if (bi < 0) return;
-  document.querySelectorAll('#sheet .bar').forEach(b => { if (b.dataset.bars.split(',').map(Number).includes(bi)) b.classList.add('now'); });
+  document.querySelectorAll('#sheet .bar[data-bars]').forEach(b => { if (b.dataset.bars.split(',').map(Number).includes(bi)) b.classList.add('now'); });
 }
 setInterval(() => tickNow(false), 150);
 
@@ -957,7 +992,8 @@ function openItem(it, thenPdf) {
   S = Object.assign({}, it.chart);
   S.chords = S.chords.map(c => Object.assign({}, c)); S.sections = (S.sections || []).map(s => Object.assign({}, s));
   // grilles enregistrées avant le nettoyage des premiers temps : on le fait à l'ouverture (sauf corrections manuelles)
-  if (!S.edited) { S.raw = S.chords; S.chords = E.tidyChords(S.raw, bpb(), S.phase); }
+  if (it.view && it.view.pass) $('o-pass').value = it.view.pass;
+  if (!S.edited) { S.raw = S.chords; S.chords = E.tidyChords(S.raw, bpb(), S.phase, passOpts()); }
   $('f-title').value = it.title; $('f-artist').value = it.artist || '';
   $('f-title').dataset.touched = '1'; $('f-artist').dataset.touched = '1';
   if (it.view) { $('o-lang').value = it.view.lang; $('o-minor').value = it.view.minor; $('o-roman').checked = !!it.view.roman; $('o-pct').checked = it.view.pct !== false; $('o-reps').checked = it.view.reps !== false; }
@@ -1057,6 +1093,12 @@ $('analyze-file').onclick = analyzeFile;
 ['o-vocab', 'o-detail', 'o-inv'].forEach(id => $(id).addEventListener('change', () => redecode('Grille recalculée avec les nouveaux réglages.')));
 ['o-lang', 'o-minor'].forEach(id => $(id).addEventListener('change', () => { if (S) fillKeySelect(); render(); renderLib(); }));
 ['o-roman', 'o-pct', 'o-reps'].forEach(id => $(id).addEventListener('change', render));
+$('o-pass').addEventListener('change', () => {
+  if (!S) return;
+  // « ignorer » et « en petit » ne changent que l'affichage; « garder comme accords » refait la grille
+  if (S.raw && !S.edited) { pushHist(); retidy(); autoSections(); }
+  render();
+});
 ['f-title', 'f-artist'].forEach(id => $(id).addEventListener('input', e => { e.target.dataset.touched = '1'; render(); }));
 $('fs').addEventListener('input', e => { $('sheet').style.fontSize = e.target.value + 'px'; fitBars(); });
 $('sheet').style.fontSize = '18px';

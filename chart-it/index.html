@@ -155,6 +155,7 @@ details.settings .fields{margin-top:10px}
 .bar.fin{border-right:0}
 .bar.fin::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;border-left:1.5px solid var(--paper-ink);border-right:4px solid var(--paper-ink)}
 .bar:hover{background:#f1f6f9}
+.bar.blank{border:0;cursor:default;background:none}
 .bar.now{outline:3px solid var(--accent);outline-offset:-3px;background:#eaf4f9}
 .bar.now::before{content:"▶";position:absolute;left:.15em;top:.05em;font-size:.55em;color:var(--accent)}
 .bar.rs{border-left:0;padding-left:1.35em}
@@ -169,7 +170,9 @@ details.settings .fields{margin-top:10px}
 .volta{position:absolute;left:0;right:0;top:-.95em;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
 .cg{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.1em}
 .tk{flex:0 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
-.cg .sl{flex:1 1 0;text-align:center}
+.cg .slot{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap}
+.ps{font-size:calc(.68em * var(--fit,1));font-weight:700;color:var(--paper-muted);white-space:nowrap}
+.ps.pre{margin-right:.2em}
 .ch{font-weight:700;font-size:calc(1.22em * var(--fit,1));line-height:1.05;white-space:nowrap}
 .ch .qm{font-size:.62em;vertical-align:super;margin-left:1px;font-family:var(--ui);font-weight:800}
 .sl{font-size:1.15em;color:var(--paper-muted);font-weight:400;line-height:1.05}
@@ -382,6 +385,8 @@ a.tab{text-decoration:none}
                 <select id="o-lang"><option value="fr">Français (Do, Ré, Mi…)</option><option value="en">Anglais (C, D, E…)</option><option value="de">Allemand (C, D, H…)</option></select></div>
               <div class="field"><label for="o-minor">Accords mineurs</label>
                 <select id="o-minor"><option value="m">« m » (Rém, Dm)</option><option value="-">« - » (Ré-, D-)</option><option value="mi">« mi » (Rémi, Dmi)</option></select></div>
+              <div class="field"><label for="o-pass">Notes de passage à la basse</label>
+                <select id="o-pass"><option value="ignore" selected>Ignorer (accords seulement)</option><option value="small">Montrer en petit (entre parenthèses)</option><option value="keep">Garder comme accords</option></select></div>
             </div>
             <div class="opts">
               <label><input type="checkbox" id="o-roman"> Afficher les chiffres romains (I, IV, V…)</label>
@@ -489,7 +494,7 @@ a.tab{text-decoration:none}
 </dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="engine.js?v=2"></script>
-<script src="app.js?v=3"></script>
+<script src="engine.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
