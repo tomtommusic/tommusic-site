@@ -468,6 +468,35 @@
   }
   const range = (a, b) => { const r = []; for (let i = a; i < b; i++) r.push(i); return r; };
 
+  /* Ramener sur le premier temps les changements d'accord détectés un temps trop tôt ou trop tard.
+     Un changement d'accord « poussé » (joué juste avant la mesure) ou détecté avec retard laisse un
+     fragment d'un seul temps au bord de la mesure : « Do / / Sim | Sim » ou « Do Lam / / » après une mesure de Do.
+     Une grille de style Real Book écrit ces accords sur le premier temps : | Do | Sim | et | Lam |.
+     Retourne un nouveau tableau; l'original (analyse brute) n'est pas modifié. */
+  function tidyChords(chords, beatsPerBar, phase) {
+    const out = chords.map(c => c && Object.assign({}, c));
+    if (beatsPerBar < 3) return out;
+    const bars = buildBars(out, beatsPerBar, phase), K = i => chordKey(out[i]);
+    const groupsOf = bar => { const g = []; for (const i of bar.beats) { const l = g[g.length - 1]; if (l && K(l.i) === K(i)) l.n++; else g.push({ i, n: 1 }); } return g; };
+    for (let bi = 0; bi < bars.length; bi++) {
+      const bar = bars[bi], M = bar.beats.length;
+      if (bar.pickup || M < 3 || M !== beatsPerBar) continue;
+      const first = bar.beats[0], last = bar.beats[M - 1];
+      let g = groupsOf(bar);
+      // retard : un seul temps de l'accord d'avant, puis le nouvel accord jusqu'à la fin de la mesure
+      if (g.length === 2 && g[0].n === 1 && out[first] && out[first].r >= 0 && out[g[1].i].r >= 0) {
+        const prevSame = bi === 0 || K(first - 1) === K(first);
+        if (prevSame) out[first] = Object.assign({}, out[g[1].i]);
+      }
+      // anticipation : le dernier temps seul, avec l'accord qui continue au début de la mesure suivante
+      g = groupsOf(bar);
+      const next = bars[bi + 1];
+      if (g.length >= 2 && g[g.length - 1].n === 1 && g[g.length - 2].n >= 2 && next && !next.pickup && K(next.start) === K(last) && out[last].r >= 0 && out[g[g.length - 2].i].r >= 0)
+        out[last] = Object.assign({}, out[g[g.length - 2].i]);
+    }
+    return out;
+  }
+
   // Retirer le silence au début et à la fin (accords « N.C. »)
   function trimBounds(chords) {
     let a = 0, b = chords.length;
@@ -552,9 +581,10 @@
     const dec = decode(feat, beats, opts);
     const low = beats.map(t => { const f = Math.round(t * feat.onset.fps); let m = 0; for (let d = -2; d <= 2; d++) m = Math.max(m, feat.onset.low[f + d] || 0); return m; });
     const mp = meterAndPhase(dec.chords, low);
-    return { feat, beats, bpm, chords: dec.chords, key: dec.key, beatsPerBar: mp.beatsPerBar, phase: mp.phase, tuning: feat.tuning };
+    const chords = tidyChords(dec.chords, mp.beatsPerBar, mp.phase);
+    return { feat, beats, bpm, chords, raw: dec.chords, key: dec.key, beatsPerBar: mp.beatsPerBar, phase: mp.phase, tuning: feat.tuning };
   }
 
-  const api = { SR, analyze, extract, analyzeFeatures, beatsFrom, scaleBeats, decode, meterAndPhase, makeBars, buildBars, findSections, trimBounds, chordKey, keyScores, QUAL, MINOR_Q, VOCAB };
+  const api = { SR, analyze, extract, analyzeFeatures, beatsFrom, scaleBeats, decode, meterAndPhase, makeBars, buildBars, tidyChords, findSections, trimBounds, chordKey, keyScores, QUAL, MINOR_Q, VOCAB };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ChartEngine = api;
 })(typeof self !== 'undefined' ? self : this);

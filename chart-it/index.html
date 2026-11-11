@@ -167,8 +167,9 @@ details.settings .fields{margin-top:10px}
 .rpl::after,.rpr::after{content:"";position:absolute;top:50%;width:4px;height:13px;transform:translateY(-50%);background:radial-gradient(circle,var(--paper-ink) 1.7px,transparent 2.1px) 0 0/4px 6.5px repeat-y}
 .rpl::after{left:10px}.rpr::after{right:10px}
 .volta{position:absolute;left:0;right:0;top:-.95em;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
-.tk{flex:1 1 0;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
-.tk.s{flex:.55 1 0;align-items:center}
+.cg{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.1em}
+.tk{flex:0 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
+.cg .sl{flex:1 1 0;text-align:center}
 .ch{font-weight:700;font-size:calc(1.22em * var(--fit,1));line-height:1.05;white-space:nowrap}
 .ch .qm{font-size:.62em;vertical-align:super;margin-left:1px;font-family:var(--ui);font-weight:800}
 .sl{font-size:1.15em;color:var(--paper-muted);font-weight:400;line-height:1.05}
@@ -488,7 +489,7 @@ a.tab{text-decoration:none}
 </dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="engine.js?v=1"></script>
-<script src="app.js?v=2"></script>
+<script src="engine.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

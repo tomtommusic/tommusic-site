@@ -100,11 +100,13 @@ function viewOpts() {
 }
 function decodeOpts() { return { vocab: $('o-vocab').value, minBeats: +$('o-detail').value, inversions: $('o-inv').checked }; }
 function getBars() { return S ? E.buildBars(S.chords, bpb(), S.phase) : []; }
+// Accords bruts de l'analyse → accords ramenés sur les premiers temps (seulement si l'utilisateur n'a rien corrigé)
+function retidy() { if (S && S.raw && !S.edited) S.chords = E.tidyChords(S.raw, bpb(), S.phase); }
 function autoSections() {
   const bars = getBars();
   S.sections = E.findSections(bars, S.chords, curKey()).map(s => ({ start: s.start, label: s.label }));
 }
-function snap() { return JSON.stringify({ beats: S.beats, chords: S.chords, meter: S.meter, phase: S.phase, key: S.key, keyOverride: S.keyOverride, bpm: S.bpm, sections: S.sections, edited: S.edited, ab: RUN ? RUN.audioBeats : null }); }
+function snap() { return JSON.stringify({ beats: S.beats, chords: S.chords, raw: S.raw || null, meter: S.meter, phase: S.phase, key: S.key, keyOverride: S.keyOverride, bpm: S.bpm, sections: S.sections, edited: S.edited, ab: RUN ? RUN.audioBeats : null }); }
 function pushHist() { if (!S) return; hist.push(snap()); if (hist.length > 40) hist.shift(); $('undo').disabled = false; }
 function undo() {
   if (!hist.length) return;
@@ -173,6 +175,15 @@ function barTokens(bar) {
   const out = []; groups.forEach(g => { out.push({ c: g.c }); for (let k = 1; k < g.n; k++) out.push({ slash: true }); });
   return out;
 }
+// Même contenu, regroupé par accord : [{c, n (temps), sl (barres obliques à afficher)}]
+// Deux accords d'égale durée s'écrivent sans barre oblique (« Do Lam »), comme dans un Real Book.
+function barGroups(bar) {
+  const groups = [];
+  for (const i of bar.beats) { const c = S.chords[i], l = groups[groups.length - 1]; if (l && E.chordKey(l.c) === E.chordKey(c)) l.n++; else groups.push({ c, n: 1 }); }
+  const half = groups.length === 2 && bar.beats.length % 2 === 0 && groups[0].n === bar.beats.length / 2;
+  groups.forEach(g => { g.sl = groups.length === 1 || half ? 0 : g.n - 1; });
+  return groups;
+}
 function barText(bar, o, key) {
   return barTokens(bar).map(t => t.slash ? '/' : chordName(t.c, o, key)).join(' ');
 }
@@ -227,13 +238,17 @@ function render() {
       const prev = ci > 0 && !(cell.volta && cell.vfirst) ? BARS[g.cells[ci - 1].bars[0]] : null;
       const txt = barText(bar, o, key);
       if (o.pct && prev && !prev.pickup && barKey(prev) === barKey(bar)) mk('span', 'pct', '%', b);
-      else for (const t of barTokens(bar)) {
-        const tk = mk('span', t.slash ? 'tk s' : 'tk', null, b);
-        if (t.slash) { mk('span', 'sl', '/', tk); continue; }
-        if (t.c.r < 0) { mk('span', 'nc', 'N.C.', tk); continue; }
-        const ch = mk('span', 'ch', chordName(t.c, o, key), tk);
-        if (t.c.c < 0.35) { const qm = mk('span', 'qm', '?', ch); qm.title = 'Accord à vérifier'; }
-        if (o.roman) mk('span', 'rn', roman(t.c, key), tk);
+      else for (const g of barGroups(bar)) {
+        // un groupe par accord : sa largeur suit son nombre de temps, ses barres obliques se répartissent après le nom
+        const gr = mk('span', 'cg', null, b); gr.style.flex = g.n + ' 1 auto';
+        const tk = mk('span', 'tk', null, gr);
+        if (g.c.r < 0) mk('span', 'nc', 'N.C.', tk);
+        else {
+          const ch = mk('span', 'ch', chordName(g.c, o, key), tk);
+          if (g.c.c < 0.35) { const qm = mk('span', 'qm', '?', ch); qm.title = 'Accord à vérifier'; }
+          if (o.roman) mk('span', 'rn', roman(g.c, key), tk);
+        }
+        for (let k = 0; k < g.sl; k++) mk('span', 'sl', '/', gr);
       }
       b.setAttribute('aria-label', `Mesure ${cell.bars[0] + 1} : ${txt}${bar.beats.some(i => S.chords[i].c < 0.35) ? ' (à vérifier)' : ''}`);
       b.onclick = () => openBarDialog(cell.bars);
@@ -366,18 +381,30 @@ async function buildPdf() {
       const prev = ci > 0 && !(cell.volta && cell.vfirst) ? BARS[g.cells[ci - 1].bars[0]] : null;
       const cy = yy + rowH * (o.roman ? 0.47 : 0.6);
       if (o.pct && prev && !prev.pickup && barKey(prev) === barKey(bar)) { font('bold', fs * 1.3); doc.text('%', pl + cw / 2, cy, { align: 'center' }); return; }
-      const toks = barTokens(bar), wt = t => t.slash ? 0.55 : 1, unit = cw / toks.reduce((a, t) => a + wt(t), 0);
-      let acc = 0;
-      toks.forEach((t, k) => {
-        const tx = pl + acc * unit, tw = wt(t) * unit; acc += wt(t);
-        if (t.slash) { font('normal', fs * 1.2); doc.setTextColor(90); doc.text('/', tx + 2, cy); doc.setTextColor(0); return; }
-        if (t.c.r < 0) { font('bold', fs * 0.8); doc.setTextColor(90); doc.text('N.C.', tx + 2, cy); doc.setTextColor(0); return; }
-        let size = fs * 1.2; const name = txt(chordName(t.c, o, key)), unc = t.c.c < 0.35;
-        font('bold', size); let w = doc.getTextWidth(name) + (unc ? size * 0.4 : 0);
-        if (w > tw - 3) { size = Math.max(fs * 0.62, size * (tw - 3) / w); font('bold', size); }
-        doc.text(name, tx + 1, cy);
-        if (unc) { const nw = doc.getTextWidth(name); font('bold', size * 0.6); doc.text('?', tx + 1 + nw + 1, cy - size * 0.38); }
-        if (o.roman) { font('bold', fs * 0.62); doc.setTextColor(80); doc.text(txt(roman(t.c, key)), tx + 1, yy + rowH * 0.85); doc.setTextColor(0); }
+      // une seule taille pour tous les accords de la mesure; l'espace suit le nombre de temps de chaque accord
+      const gs = barGroups(bar), totalN = gs.reduce((a, g) => a + g.n, 0);
+      const label = g => g.c.r < 0 ? 'N.C.' : txt(chordName(g.c, o, key));
+      const natural = sz => { font('bold', sz); return gs.map(g => doc.getTextWidth(label(g)) + (g.c.c < 0.35 && g.c.r >= 0 ? sz * 0.45 : 0) + g.sl * sz * 0.75); };
+      let size = fs * 1.2, nat = natural(size), gap = size * 0.35, need = nat.reduce((a, v) => a + v, 0) + gap * (gs.length - 1);
+      if (need > cw) { size = Math.max(fs * 0.62, size * cw / need); nat = natural(size); gap = size * 0.35; need = nat.reduce((a, v) => a + v, 0) + gap * (gs.length - 1); }
+      const extra = Math.max(0, cw - need);
+      let gx = pl;
+      gs.forEach((g, k) => {
+        const gw = nat[k] + extra * g.n / totalN, name = label(g);
+        font('bold', g.c.r < 0 ? size * 0.7 : size);
+        if (g.c.r < 0) doc.setTextColor(90);
+        doc.text(name, gx + 1, cy); doc.setTextColor(0);
+        const nw = doc.getTextWidth(name);
+        if (g.c.r >= 0 && g.c.c < 0.35) { font('bold', size * 0.6); doc.text('?', gx + 1 + nw + 1, cy - size * 0.38); }
+        if (o.roman && g.c.r >= 0) { font('bold', fs * 0.62); doc.setTextColor(80); doc.text(txt(roman(g.c, key)), gx + 1, yy + rowH * 0.85); doc.setTextColor(0); }
+        // barres obliques réparties dans le reste de la place du groupe
+        if (g.sl) {
+          const x0 = gx + nat[k] - g.sl * size * 0.75, slot = (gx + gw - x0) / g.sl;
+          font('normal', size); doc.setTextColor(110);
+          for (let q = 0; q < g.sl; q++) doc.text('/', x0 + slot * (q + 0.5), cy, { align: 'center' });
+          doc.setTextColor(0);
+        }
+        gx += gw + gap;
       });
     });
     y = top + h;
@@ -680,7 +707,7 @@ async function runAnalysis(x, map, rate) {
     const r = await E.analyze(x, decodeOpts(), p => showProgress(p, p < 0.15 ? 'Recherche de la pulsation…' : p < 0.9 ? 'Recherche des accords…' : 'Mise en forme de la grille…'));
     RUN = { feat: r.feat, audioBeats: r.beats, map, rate };
     if (S) pushHist();
-    S = { v: 1, beats: r.beats.map(map), chords: r.chords, meter: r.beatsPerBar === 3 ? '3/4' : '4/4', phase: r.phase, key: r.key, keyOverride: null, bpm: r.bpm / rate, tuning: Math.round(r.tuning), sections: [], source: SRC ? Object.assign({}, SRC) : null, edited: false };
+    S = { v: 1, beats: r.beats.map(map), chords: r.chords, raw: r.raw, meter: r.beatsPerBar === 3 ? '3/4' : '4/4', phase: r.phase, key: r.key, keyOverride: null, bpm: r.bpm / rate, tuning: Math.round(r.tuning), sections: [], source: SRC ? Object.assign({}, SRC) : null, edited: false };
     autoSections();
     syncTools(); render();
     hideProgress();
@@ -699,7 +726,7 @@ function redecode(reason) {
   const wasEdited = S.edited;
   pushHist();
   const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts());
-  S.chords = dec.chords; S.key = dec.key; S.edited = false;
+  S.raw = dec.chords; S.key = dec.key; S.edited = false; S.chords = E.tidyChords(S.raw, bpb(), S.phase);
   autoSections(); syncTools(); render();
   setStatus($('status'), reason + (wasEdited ? ' Tes corrections ont été remplacées.' : ''), 'ok', 'Annuler', undo);
 }
@@ -720,12 +747,12 @@ function syncTools() {
 }
 $('o-meter').addEventListener('change', e => {
   if (!S) return; pushHist();
-  S.meter = e.target.value; S.phase = S.phase % bpb(); autoSections(); render();
+  S.meter = e.target.value; S.phase = S.phase % bpb(); retidy(); autoSections(); render();
   setStatus($('status'), `Mesure changée pour ${S.meter}. Les sections ont été refaites.`, 'ok', 'Annuler', undo);
 });
 function shiftPhase(d) {
   if (!S) return; pushHist();
-  const n = bpb(); S.phase = ((S.phase + d) % n + n) % n; autoSections(); render();
+  const n = bpb(); S.phase = ((S.phase + d) % n + n) % n; retidy(); autoSections(); render();
   setStatus($('status'), 'Premier temps déplacé. Les sections ont été refaites.', 'ok', 'Annuler', undo);
 }
 $('ph-l').onclick = () => shiftPhase(-1);
@@ -746,7 +773,7 @@ function changeTempo(f) {
     S.beats = dbl(S.beats); S.chords = ch; if (RUN) RUN.audioBeats = dbl(RUN.audioBeats);
     S.phase = (2 * S.phase) % n; S.bpm *= 2;
   }
-  if (RUN && !S.edited) { const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts()); S.chords = dec.chords; }
+  if (RUN && !S.edited) { const dec = E.decode(RUN.feat, RUN.audioBeats, decodeOpts()); S.raw = dec.chords; S.chords = E.tidyChords(S.raw, n, S.phase); } else S.raw = null;
   autoSections(); render();
   setStatus($('status'), `Tempo ${f === 2 ? 'doublé' : 'divisé par deux'} (♩ = ${Math.round(S.bpm)}). Les sections ont été refaites.`, 'ok', 'Annuler', undo);
 }
@@ -929,6 +956,8 @@ function openItem(it, thenPdf) {
   RUN = null;
   S = Object.assign({}, it.chart);
   S.chords = S.chords.map(c => Object.assign({}, c)); S.sections = (S.sections || []).map(s => Object.assign({}, s));
+  // grilles enregistrées avant le nettoyage des premiers temps : on le fait à l'ouverture (sauf corrections manuelles)
+  if (!S.edited) { S.raw = S.chords; S.chords = E.tidyChords(S.raw, bpb(), S.phase); }
   $('f-title').value = it.title; $('f-artist').value = it.artist || '';
   $('f-title').dataset.touched = '1'; $('f-artist').dataset.touched = '1';
   if (it.view) { $('o-lang').value = it.view.lang; $('o-minor').value = it.view.minor; $('o-roman').checked = !!it.view.roman; $('o-pct').checked = it.view.pct !== false; $('o-reps').checked = it.view.reps !== false; }
