@@ -158,15 +158,15 @@ details.settings .fields{margin-top:10px}
 .bar.blank{border:0;cursor:default;background:none}
 .bar.now{outline:3px solid var(--accent);outline-offset:-3px;background:#eaf4f9}
 .bar.now::before{content:"▶";position:absolute;left:.15em;top:.05em;font-size:.55em;color:var(--accent)}
-.bar.rs{border-left:0;padding-left:1.35em}
-.bar.rs .rpl{position:absolute;left:0;top:0;bottom:0;width:14px}
-.bar.re{border-right:0;padding-right:1.35em}
-.bar.re .rpr{position:absolute;right:0;top:0;bottom:0;width:14px}
-.rpl::before,.rpr::before{content:"";position:absolute;top:0;bottom:0;width:7px;border-color:var(--paper-ink);border-style:solid}
+.bar.rs{border-left:0;padding-left:calc(18px + .35em)}
+.bar.rs .rpl{position:absolute;left:0;top:0;bottom:0;width:18px}
+.bar.re{border-right:0;padding-right:calc(18px + .35em)}
+.bar.re .rpr{position:absolute;right:0;top:0;bottom:0;width:18px}
+.rpl::before,.rpr::before{content:"";position:absolute;top:0;bottom:0;width:10px;box-sizing:border-box;border-color:var(--paper-ink);border-style:solid}
 .rpl::before{left:0;border-width:0 1.5px 0 4px}
 .rpr::before{right:0;border-width:0 4px 0 1.5px}
-.rpl::after,.rpr::after{content:"";position:absolute;top:50%;width:4px;height:13px;transform:translateY(-50%);background:radial-gradient(circle,var(--paper-ink) 1.7px,transparent 2.1px) 0 0/4px 6.5px repeat-y}
-.rpl::after{left:10px}.rpr::after{right:10px}
+.rpl::after,.rpr::after{content:"";position:absolute;top:50%;width:5px;height:14px;transform:translateY(-50%);background:radial-gradient(circle,var(--paper-ink) 1.8px,transparent 2.2px) 0 0/5px 7px repeat-y}
+.rpl::after{left:12.5px}.rpr::after{right:12.5px}
 .volta{position:absolute;left:0;right:0;top:-.95em;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
 .cg{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.1em}
 .tk{flex:0 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
@@ -495,6 +495,6 @@ a.tab{text-decoration:none}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="engine.js?v=3"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

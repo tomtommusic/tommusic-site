@@ -389,11 +389,11 @@ async function buildPdf() {
       const r = Math.floor(ci / 4), col = ci % 4, x = gridX + col * bw, yy = top + r * (rowH + rowGap), bar = BARS[cell.bars[0]];
       const lastInRow = col === 3 || ci === g.cells.length - 1;
       // barre de gauche
-      if (cell.rs) { line(x + 1.2, yy, x + 1.2, yy + rowH, 2.4); line(x + 4.6, yy, x + 4.6, yy + rowH, 0.8); dots(x + 8, yy + rowH / 2); }
+      if (cell.rs) { line(x + 1.2, yy, x + 1.2, yy + rowH, 2.4); line(x + 5.2, yy, x + 5.2, yy + rowH, 0.8); dots(x + 9.2, yy + rowH / 2); }
       else line(x, yy, x, yy + rowH, 0.9);
       // barre de droite
       const xr = x + bw;
-      if (cell.re) { dots(xr - 8, yy + rowH / 2); line(xr - 4.6, yy, xr - 4.6, yy + rowH, 0.8); line(xr - 1.2, yy, xr - 1.2, yy + rowH, 2.4); }
+      if (cell.re) { dots(xr - 9.2, yy + rowH / 2); line(xr - 5.2, yy, xr - 5.2, yy + rowH, 0.8); line(xr - 1.2, yy, xr - 1.2, yy + rowH, 2.4); }
       else if (cell.end === 'fin') { line(xr - 4.6, yy, xr - 4.6, yy + rowH, 0.8); line(xr - 1.2, yy, xr - 1.2, yy + rowH, 2.4); }
       else if (cell.end === 'dbl') { line(xr - 3, yy, xr - 3, yy + rowH, 0.8); line(xr, yy, xr, yy + rowH, 0.8); }
       else if (lastInRow) line(xr, yy, xr, yy + rowH, 0.9);
@@ -403,7 +403,7 @@ async function buildPdf() {
         if (cell.vfirst) { line(x, vy, x, vy + vPad * 0.45, 0.8); font('bold', fs * 0.6); doc.text(cell.volta, x + 3, vy + fs * 0.62); }
       }
       // contenu
-      const pl = x + (cell.rs ? 13 : 5), pr = xr - (cell.re ? 13 : 5), cw = pr - pl;
+      const pl = x + (cell.rs ? 14 : 5), pr = xr - (cell.re ? 14 : 5), cw = pr - pl;
       const prev = ci > 0 && !(cell.volta && cell.vfirst) ? BARS[g.cells[ci - 1].bars[0]] : null;
       const cy = yy + rowH * (o.roman ? 0.47 : 0.6);
       if (o.pct && prev && !prev.pickup && barKey(prev) === barKey(bar)) { font('bold', fs * 1.3); doc.text('%', pl + cw / 2, cy, { align: 'center' }); return; }
