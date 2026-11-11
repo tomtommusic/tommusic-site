@@ -145,12 +145,12 @@ function layout(bars, secs, o) {
     const a = secs[i], A = keys(a);
     if (o.reps && A.length >= 2) {
       let j = i; while (j + 1 < secs.length && secs[j + 1].label === a.label && eq(keys(secs[j + 1]), A)) j++;
-      if (j > i) { const run = secs.slice(i, j + 1), hv = halves(a); out.push({ type: 'rep', insts: hv && hv.same ? run.flatMap(x => split(x)) : run }); i = j + 1; continue; }
-      const b = secs[i + 1];
+      const run = secs.slice(i, j + 1), b = secs[j + 1];
       if (b && b.label === a.label && b.e - b.s === a.e - a.s) {
         const B = keys(b); let p = 0; while (p < A.length && A[p] === B[p]) p++;
-        if (p >= 2 && p < A.length && A.length - p <= 2) { out.push({ type: 'volta', insts: [a, b], common: p }); i += 2; continue; }
+        if (p >= 2 && p < A.length && A.length - p <= 2) { out.push({ type: 'volta', insts: [...run, b], common: p }); i = j + 2; continue; }
       }
+      if (j > i) { const hv = halves(a); out.push({ type: 'rep', insts: hv && hv.same ? run.flatMap(x => split(x)) : run }); i = j + 1; continue; }
     }
     // à l'intérieur d'une section : deux moitiés pareilles → reprise ×2; pareilles sauf la fin → 1re et 2e fins
     const hv = o.reps ? halves(a) : null;
@@ -166,18 +166,19 @@ function layout(bars, secs, o) {
       for (let k = 0; k < a.e - a.s; k++) cells.push({ bars: g.insts.map(s => s.s + k) });
       cells[0].rs = true; cells[cells.length - 1].re = true;
     } else {
-      const b = g.insts[1], n = a.e - a.s;
-      for (let k = 0; k < g.common; k++) cells.push({ bars: [a.s + k, b.s + k] });
-      for (let k = g.common; k < n; k++) cells.push({ bars: [a.s + k], volta: '1.', vfirst: k === g.common });
+      const b = g.insts[g.insts.length - 1], firsts = g.insts.slice(0, -1), m = firsts.length, n = a.e - a.s;
+      const v1 = m === 1 ? '1.' : m === 2 ? '1. 2.' : '1.–' + m + '.', v2 = (m + 1) + '.';
+      for (let k = 0; k < g.common; k++) cells.push({ bars: g.insts.map(s => s.s + k) });
+      for (let k = g.common; k < n; k++) cells.push({ bars: firsts.map(s => s.s + k), volta: v1, vfirst: k === g.common, vlast: k === n - 1 });
       cells[cells.length - 1].re = true;
       // la 2e fin commence sur la ligne suivante, alignée sous la 1re fin (cases vides avant)
       const pad = (4 - cells.length % 4) % 4 + g.common % 4;
       for (let k = 0; k < pad; k++) cells.push({ bars: [], blank: true });
-      for (let k = g.common; k < n; k++) cells.push({ bars: [b.s + k], volta: '2.', vfirst: k === g.common });
+      for (let k = g.common; k < n; k++) cells.push({ bars: [b.s + k], volta: v2, vfirst: k === g.common });
       cells[0].rs = true;
     }
     const last = cells[cells.length - 1];
-    if (!last.re) last.end = gi === out.length - 1 ? 'fin' : 'dbl';
+    if (!last.re && gi === out.length - 1) last.end = 'fin';
     g.cells = cells;
     g.len = g.insts.reduce((t, s) => t + (s.e - s.s), 0);
   });
@@ -239,20 +240,21 @@ function render() {
     lb.setAttribute('aria-label', 'Section ' + g.insts[0].label + ', renommer');
     const n = g.insts[0].e - g.insts[0].s;
     mk('small', '', n + ' mes.', lb);
-    if (g.type === 'rep') mk('span', 'rx', '×' + g.insts.length, lb);
+    if (g.type !== 'one') mk('span', 'rx', '×' + g.insts.length, lb);
     lb.onclick = () => openSecDialog(gi);
     const rows = mk('div', 'rows', null, sec);
     if (g.cells.some(c => c.volta)) rows.classList.add('hasv');
     let row = null;
     g.cells.forEach((cell, ci) => {
-      if (ci % 4 === 0) row = mk('div', 'row', null, rows);
+      if (ci % 4 === 0) { row = mk('div', 'row', null, rows); if (ci > 0 && g.cells.slice(ci, ci + 4).some(c => c.volta && c.vfirst)) row.classList.add('vrow'); }
       if (cell.blank) { mk('div', 'bar blank', null, row); return; }
       const bar = BARS[cell.bars[0]], b = mk('button', 'bar', null, row); b.type = 'button';
       b.dataset.bars = cell.bars.join(',');
-      if (cell.rs) { b.classList.add('rs'); mk('span', 'rpl', null, b); }
-      if (cell.re) { b.classList.add('re'); mk('span', 'rpr', null, b); }
+      const dots = el => { mk('i', 'dt a', null, el); mk('i', 'dt b', null, el); };
+      if (cell.rs) { b.classList.add('rs'); dots(mk('span', 'rpl', null, b)); }
+      if (cell.re) { b.classList.add('re'); dots(mk('span', 'rpr', null, b)); }
       if (cell.end) b.classList.add(cell.end);
-      if (cell.volta) { const v = mk('span', 'volta', cell.vfirst ? cell.volta : '', b); if (!cell.vfirst) v.style.borderLeft = '0'; }
+      if (cell.volta) { const v = mk('span', 'volta' + (cell.vlast ? ' close' : ''), cell.vfirst ? cell.volta : '', b); if (!cell.vfirst) v.style.borderLeft = '0'; }
       // % si identique à la mesure précédente du groupe
       const prev = ci > 0 && !(cell.volta && cell.vfirst) ? BARS[g.cells[ci - 1].bars[0]] : null;
       const txt = barText(bar, o, key);
@@ -368,10 +370,13 @@ async function buildPdf() {
   doc.splitTextToSize(txt('Forme : ' + secRanges(BARS).map(s => s.label).join(' – ')), W - 2 * M).forEach(l => { doc.text(l, M, y + fs * 0.9); y += fs * 1.2; });
   doc.setTextColor(0); y += fs * 0.6;
   const line = (x1, y1, x2, y2, w) => { doc.setLineWidth(w); doc.line(x1, y1, x2, y2); };
-  const dots = (x, yc) => { doc.circle(x, yc - 3.2, 1.25, 'F'); doc.circle(x, yc + 3.2, 1.25, 'F'); };
+  const dots = (x, yc) => { doc.circle(x, yc - 4, 1.7, 'F'); doc.circle(x, yc + 4, 1.7, 'F'); };
   for (const g of GROUPS) {
     const nRows = Math.ceil(g.cells.length / 4), hasV = g.cells.some(c => c.volta);
-    const h = (hasV ? vPad : 0) + nRows * rowH + (nRows - 1) * rowGap;
+    // position de chaque ligne : une ligne qui commence une 2e fin reçoit de l'espace pour son crochet
+    const rowY = []; let acc = 0;
+    for (let r = 0; r < nRows; r++) { if (r > 0) acc += rowGap + (g.cells.slice(r * 4, r * 4 + 4).some(c => c.volta && c.vfirst) ? vPad : 0); rowY.push(acc); acc += rowH; }
+    const h = (hasV ? vPad : 0) + acc;
     if (y + h + fs > bottom && y > M + 1) { doc.addPage(); y = M; }
     y += fs * 0.7;
     const top = y + (hasV ? vPad : 0);
@@ -382,11 +387,11 @@ async function buildPdf() {
     doc.setLineWidth(1.4); doc.rect(M, top + 2, lw, lh);
     doc.text(txt(lab), M + lw / 2, top + 2 + lh / 2 + fs * 0.3, { align: 'center', maxWidth: lw - 4 });
     font('normal', fs * 0.62); doc.setTextColor(80);
-    doc.text(txt(n + ' mes.' + (g.type === 'rep' ? '  ×' + g.insts.length : '')), M, top + 2 + lh + fs * 0.85);
+    doc.text(txt(n + ' mes.' + (g.type !== 'one' ? '  ×' + g.insts.length : '')), M, top + 2 + lh + fs * 0.85);
     doc.setTextColor(0);
     g.cells.forEach((cell, ci) => {
       if (cell.blank) return;
-      const r = Math.floor(ci / 4), col = ci % 4, x = gridX + col * bw, yy = top + r * (rowH + rowGap), bar = BARS[cell.bars[0]];
+      const r = Math.floor(ci / 4), col = ci % 4, x = gridX + col * bw, yy = top + rowY[r], bar = BARS[cell.bars[0]];
       const lastInRow = col === 3 || ci === g.cells.length - 1;
       // barre de gauche
       if (cell.rs) { line(x + 1.2, yy, x + 1.2, yy + rowH, 2.4); line(x + 5.2, yy, x + 5.2, yy + rowH, 0.8); dots(x + 9.2, yy + rowH / 2); }
@@ -395,12 +400,12 @@ async function buildPdf() {
       const xr = x + bw;
       if (cell.re) { dots(xr - 9.2, yy + rowH / 2); line(xr - 5.2, yy, xr - 5.2, yy + rowH, 0.8); line(xr - 1.2, yy, xr - 1.2, yy + rowH, 2.4); }
       else if (cell.end === 'fin') { line(xr - 4.6, yy, xr - 4.6, yy + rowH, 0.8); line(xr - 1.2, yy, xr - 1.2, yy + rowH, 2.4); }
-      else if (cell.end === 'dbl') { line(xr - 3, yy, xr - 3, yy + rowH, 0.8); line(xr, yy, xr, yy + rowH, 0.8); }
       else if (lastInRow) line(xr, yy, xr, yy + rowH, 0.9);
       // volta
       if (cell.volta) {
         const vy = yy - vPad * 0.55; line(x, vy, x + bw - 2, vy, 0.8);
-        if (cell.vfirst) { line(x, vy, x, vy + vPad * 0.45, 0.8); font('bold', fs * 0.6); doc.text(cell.volta, x + 3, vy + fs * 0.62); }
+        if (cell.vfirst) { line(x, vy, x, vy + vPad * 0.45, 0.8); font('bold', fs * 0.6); doc.text(txt(cell.volta), x + 3, vy + fs * 0.62); }
+        if (cell.vlast) line(x + bw - 2, vy, x + bw - 2, vy + vPad * 0.45, 0.8);
       }
       // contenu
       const pl = x + (cell.rs ? 14 : 5), pr = xr - (cell.re ? 14 : 5), cw = pr - pl;

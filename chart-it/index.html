@@ -151,7 +151,6 @@ details.settings .fields{margin-top:10px}
 .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:relative}
 .bar{position:relative;min-height:2.75em;border:0;border-left:1.5px solid var(--paper-ink);padding:.3em .4em .3em .5em;display:flex;align-items:center;gap:.2em;cursor:pointer;background:none;font:inherit;color:inherit;text-align:left;min-width:0}
 .bar:last-child,.bar.last{border-right:1.5px solid var(--paper-ink)}
-.bar.dbl{border-right:4px double var(--paper-ink)}
 .bar.fin{border-right:0}
 .bar.fin::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;border-left:1.5px solid var(--paper-ink);border-right:4px solid var(--paper-ink)}
 .bar:hover{background:#f1f6f9}
@@ -165,9 +164,12 @@ details.settings .fields{margin-top:10px}
 .rpl::before,.rpr::before{content:"";position:absolute;top:0;bottom:0;width:10px;box-sizing:border-box;border-color:var(--paper-ink);border-style:solid}
 .rpl::before{left:0;border-width:0 1.5px 0 4px}
 .rpr::before{right:0;border-width:0 4px 0 1.5px}
-.rpl::after,.rpr::after{content:"";position:absolute;top:50%;width:5px;height:14px;transform:translateY(-50%);background:radial-gradient(circle,var(--paper-ink) 1.8px,transparent 2.2px) 0 0/5px 7px repeat-y}
-.rpl::after{left:12.5px}.rpr::after{right:12.5px}
-.volta{position:absolute;left:0;right:0;top:-.95em;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
+.dt{position:absolute;width:0;height:0;border:2.4px solid var(--paper-ink);border-radius:50%}
+.dt.a{top:calc(50% - 8px)}.dt.b{top:calc(50% + 3.2px)}
+.rpl .dt{left:12px}.rpr .dt{right:12px}
+.row.vrow{margin-top:1em}
+.volta.close{border-right:1.5px solid var(--paper-ink);right:3px}
+.volta{position:absolute;left:0;right:0;top:-.95em;white-space:nowrap;height:.8em;border-top:1.5px solid var(--paper-ink);border-left:1.5px solid var(--paper-ink);font-size:.62em;font-weight:700;line-height:1;padding:.15em .3em;font-family:var(--ui)}
 .cg{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:.1em}
 .tk{flex:0 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start}
 .cg .slot{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap}
@@ -253,13 +255,14 @@ a.tab{text-decoration:none}
 @media print{
   :root{--bg:#fff}
   body{background:#fff}
-  .side,.head,.pill,.alt,.grid>.card:first-child,.fiche-top,#v-lib,.promo,.foot,.toplinks,dialog{display:none!important}
+  .side,.head,.pill,.alt,.grid>.card:first-child,.fiche-top,#sheet-help,#v-lib,.promo,.foot,.toplinks,dialog{display:none!important}
   .app,.grid{display:block}
   main{padding:0}
   .card{border:0;padding:0;background:#fff}
   .paper{box-shadow:none;padding:0;border:0}
   .bar.now{outline:0;background:none}.bar.now::before{display:none}
   .bar:hover{background:none}
+  .paper,.paper *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
 </head>
@@ -494,7 +497,7 @@ a.tab{text-decoration:none}
 </dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="engine.js?v=3"></script>
-<script src="app.js?v=5"></script>
+<script src="engine.js?v=4"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
