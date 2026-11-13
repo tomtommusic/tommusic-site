@@ -4614,11 +4614,19 @@ function openLibrary(topic){
 }
 
 /* ========== outil d'aide : clic sur un élément -> page de la bibliothèque ========== */
-const HELP_META={'Tonalité':'armures','Clé':'cles','Mesure':null,'Longueur':'barres','Tempo':'tempo','Étendue':'lignes-sup','Altérations':'alterations','Série':'noms-notes','Direction':'intervalles-def','Intervalles':'intervalles-qualites','Accords':'accords-degres','Mode':'gammes-mineures','Instrument':'transpositeurs'};
-const HELP_FIELD={'Tonalités':'armures','Clé':'cles','Mesures':null,'Figures permises':'figures-notes','Saut maximal':'intervalles-def','Registre':'degres','Tempo':'tempo','Nombre de mesures':'barres','Intervalles':'intervalles-qualites','Direction':'intervalles-def','Accords permis':'accords-degres','Renversements':'renversements','Instrument de l\'élève (micro)':'transpositeurs','Altérations':'alterations','Étendue':'lignes-sup'};
+const HELP_META={'Tonalité':'armures','Clé':'cles','Mesure':null,'Longueur':'barres','Tempo':'tempo','Étendue':'lignes-sup','Altérations':'alterations','Série':'noms-notes','Direction':'intervalles-def','Intervalles':'intervalles-qualites','Accords':'accords-degres','Mode':'gammes-mineures','Instrument':'transpositeurs','Style':'batterie-lire','Niveau':'batterie-lire'};
+const HELP_FIELD={'Tonalités':'armures','Clé':'cles','Mesures':null,'Figures permises':'figures-notes','Saut maximal':'intervalles-def','Registre':'degres','Tempo':'tempo','Nombre de mesures':'barres','Intervalles':'intervalles-qualites','Direction':'intervalles-def','Accords permis':'accords-degres','Renversements':'renversements','Instrument de l\'élève (micro)':'transpositeurs','Altérations':'alterations','Étendue':'lignes-sup','Tablature':'tablature','Premier accord':'fonctions','Éléments':'batterie-portee','Style':'batterie-lire','Niveau':'batterie-lire','Roulements':'batterie-lire'};
 const meterTopic=()=>S.ex&&S.ex.meter&&S.ex.meter.comp?'mesures-composees':'mesures-simples';
 function figTopic(id){const f=FIG_BY[id];if(!f)return'figures-notes';if(f.u.every(x=>x<0))return'silences';if(id==='synco')return'syncope';
   if(['npc','blanchep','np','bp8','cpd','cpdc','sp'].includes(id))return'points-liaisons';if(f.comp)return'mesures-composees';return'figures-notes';}
+/* texte français d'origine d'un élément, même quand l'app est en anglais ou en espagnol (les libellés servent de clés) */
+function helpFr(node){
+  if(!node)return'';let seen=null;try{seen=TR_SEEN;}catch(e){}
+  let rev=null;try{if(I18N.lang!=='fr'){const L=I18N.lang;helpFr.rev=helpFr.rev||{};rev=helpFr.rev[L];if(!rev){rev=helpFr.rev[L]={};const pref=k=>(k in HELP_META||k in HELP_FIELD)?1:0;for(const[k,v]of Object.entries(I18N.dict[L]||{})){const e=String(v).trim(),o=rev[e];if(o==null||pref(k)>pref(o))rev[e]=k;}}}}catch(e){}
+  const one=t=>{const st=seen&&seen.get(t);if(st&&t.nodeValue===st.out&&st.fr!==st.out)return st.fr;const v=t.nodeValue||'',k=v.trim();return rev&&k&&rev[k]!=null?v.replace(k,rev[k]):v;};
+  if(node.nodeType===3)return one(node)||'';
+  let out='';const w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);let t;while((t=w.nextNode()))out+=one(t)||'';return out;
+}
 function helpTopicFor(node){
   for(let n=node;n&&n!==document.body;n=n.parentElement||n.parentNode){
     if(!n.getAttribute)continue;
@@ -4626,22 +4634,37 @@ function helpTopicFor(node){
     const dh=n.getAttribute('data-help');if(dh){if(dh.startsWith('iv-'))return'intervalles-qualites';return dh;}
     const cl=typeof n.className==='string'?n.className:(n.className&&n.className.baseVal)||'';
     if(cl.includes('abcjs-')){
+      /* éléments qui ont leur propre fiche (avant, ils tombaient sur « La portée » ou sur rien) */
+      if(cl.includes('abcjs-ledger'))return'lignes-sup';
+      if(cl.includes('abcjs-brace'))return'grand-systeme';
+      if(cl.includes('abcjs-dynamics'))return'nuances';
+      if(cl.includes('abcjs-slur')||cl.includes('abcjs-tie'))return'points-liaisons';
+      if(cl.includes('abcjs-triplet'))return'nolets';
+      if(cl.includes('abcjs-beam'))return'figures-notes';
+      if(cl.includes('abcjs-tempo'))return'tempo';
+      if(/(^|\s)abcjs-chord(\s|$)/.test(cl))return'chiffrage';
+      if(cl.includes('abcjs-decoration'))return'articulations';
+      if(S.mod==='lb'&&cl.includes('abcjs-note'))return'batterie-lire';
+      if(S.mod==='lb'&&cl.includes('abcjs-staff')&&!cl.includes('abcjs-staff-extra'))return'batterie-portee';
       if(cl.includes('abcjs-clef'))return'cles';
       if(cl.includes('abcjs-key-signature'))return'armures';
       if(cl.includes('abcjs-time-signature'))return meterTopic();
       if(cl.includes('abcjs-rest'))return'silences';
+      if(cl.includes('abcjs-lyric')&&S.mod==='lb')return'batterie-portee';
       if(cl.includes('abcjs-lyric'))return S.mod==='pc'?'chiffrage':S.mod==='iv'?'intervalles-qualites':'noms-notes';
       if(cl.includes('abcjs-bar'))return'barres';
       if(cl.includes('abcjs-note'))return S.mod==='ln'?'noms-notes':S.mod==='pc'?'accords-degres':S.mod==='iv'?'intervalles-def':(cl.includes('abcjs-d0-25')||cl.includes('abcjs-d0-125')?'figures-notes':'figures-notes');
       if(cl.includes('abcjs-staff'))return'portee';
     }
     if(n.classList){
-      if(n.classList.contains('mi')){const lab=(n.querySelector('span')?.firstChild?.textContent||'').trim();return lab==='Mesure'?meterTopic():HELP_META[lab]||null;}
+      if(n.classList.contains('mi')){const lab=helpFr(n.querySelector('span')?.firstChild).trim();return lab==='Mesure'?meterTopic():HELP_META[lab]||null;}
       if(n.classList.contains('wk')||n.classList.contains('bk'))return'clavier';
       if(n.classList.contains('name'))return'noms-notes';
       if(n.classList.contains('fig'))return figTopic(n.dataset.fig);
-      if(n.classList.contains('field')){const lab=(n.querySelector('.fl')?.textContent||'').trim();if(lab in HELP_FIELD)return HELP_FIELD[lab]??meterTopic();}
-      if(n.classList.contains('btn')){const t=(n.textContent||'').trim();
+      if(n.classList.contains('field')){const lab=helpFr(n.querySelector('.fl')).trim();if(lab in HELP_FIELD)return HELP_FIELD[lab]??meterTopic();
+        /* libellés plus longs : « Registre (degrés nommés…) », « Altérations accidentelles », « Figures permises (lignes…) »… */
+        const k=Object.keys(HELP_FIELD).sort((x,y)=>y.length-x.length).find(k=>lab.startsWith(k+' '));if(k)return HELP_FIELD[k]??meterTopic();}
+      if(n.classList.contains('btn')){const t=helpFr(n).trim();
         if(/Gamme et arpège/.test(t))return S.ex&&S.ex.key&&S.ex.key.minor?'gammes-mineures':'gamme-majeure';
         if(/Tonalité/.test(t))return'fonctions';if(/métronome/.test(t))return'tempo';}
       if(n.classList.contains('countin'))return'mesures-simples';
@@ -4657,13 +4680,13 @@ function helpTopicFor(node){
 const HELP={on:false,cur:null};
 /* dans une partition, le pointeur tombe souvent entre les traits : on cherche l'élément dessiné le plus petit qui contient le point */
 function helpTarget(e){
-  const t=e.target,svg=t&&t.closest&&t.closest('#score svg');
+  const t=e.target,svg=t&&t.closest&&t.closest('main svg');
   if(!svg)return t;
   let best=null,ba=1e12;
   svg.querySelectorAll('[class*="abcjs-"]').forEach(n=>{const c=n.getAttribute('class')||'';if(/staff-wrapper|abcjs-staff-extra(?! abcjs-(clef|key|time))/.test(c)&&!/clef|key-signature|time-signature/.test(c))return;
     const r=n.getBoundingClientRect();if(e.clientX<r.left-2||e.clientX>r.right+2||e.clientY<r.top-2||e.clientY>r.bottom+2)return;
     const a=Math.max(1,r.width*r.height);if(helpTopicFor(n)&&a<ba){ba=a;best=n;}});
-  return best||t;
+  return best||svg.querySelector('.abcjs-staff')||t;
 }
 function helpSet(on){
   HELP.on=on;document.body.classList.toggle('helpmode',on);$('#helpbtn').setAttribute('aria-pressed',String(on));$('#helpbar').hidden=!on;
@@ -7572,7 +7595,7 @@ matchMedia('(max-width:600px)').addEventListener?.('change',()=>{if(S.mod==='ho'
 document.addEventListener('click',e=>{if(S.mod!=='ho'||!e.target.closest||!e.target.closest('#helpbtn'))return;
   e.stopImmediatePropagation();e.preventDefault();openModule('ln');setTimeout(()=>{if(typeof helpSet==='function')helpSet(true);},250);},true);
 
-const AP_VERSION='1.39.3';
+const AP_VERSION='1.39.4';
 const AP_MIT_BODY="Permission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.";
 const AP_SMP="MuseScore General / MS Basic\nFluidR3 (original version) by Frank Wen Copyright (c) 2000-02, 2008\nMono conversion (FluidR3Mono) by Michael Cowgill Copyright (c) 2014-17\nAdaptation for MuseScore_General.sf2 by S. Christian Collins Copyright (c) 2018-19\n\n"+AP_MIT_BODY;
 const AP_MIT="Copyright (c) 2009-2026 Paul Rosen and Gregory Dyke\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.";
