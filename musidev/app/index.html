@@ -407,6 +407,7 @@ h1{font:700 clamp(2rem,4vw,2.9rem)/1.05 var(--f-display);letter-spacing:-.01em;c
 .helpbtn[aria-pressed="true"] .q{background:var(--accent-ink);color:var(--accent)}
 body.helpmode main{cursor:help}
 body.helpmode main *{cursor:help!important}
+@media (hover:none){body.helpmode main *{cursor:pointer!important;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
 .helpbox{position:fixed;z-index:50;pointer-events:none;border:2px dashed var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,transparent);transition:all .08s}
 .helpbox .hb-tag{position:absolute;left:-2px;top:-26px;white-space:nowrap;background:var(--accent);color:var(--accent-ink);font:700 .75rem/1 var(--f-body);padding:5px 9px;border-radius:8px}
 .helpwrap{position:relative;align-self:flex-start}
@@ -4674,11 +4675,18 @@ function helpHover(e){
   Object.assign(box.style,{left:(r.left-4)+'px',top:(r.top-4)+'px',width:(r.width+8)+'px',height:(r.height+8)+'px'});
   $('#hbtag').textContent=LIB_TOPICS[t].t;
 }
-['pointerdown','mousedown','click'].forEach(type=>document.addEventListener(type,e=>{
+/* iPhone/iPad : Safari n'envoie pas toujours de « click » quand on touche un élément non cliquable (texte, note de la partition…).
+   Au doigt, on agit donc dès que le doigt se lève (pointerup), puis on avale le « click » qui pourrait suivre,
+   sinon il déclencherait le bouton placé sous le doigt une fois le mode Explications fermé. */
+HELP.swallow=0;
+['pointerdown','pointerup','mousedown','mouseup','click'].forEach(type=>document.addEventListener(type,e=>{
+  if(type==='click'&&Date.now()<HELP.swallow){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return;}
   if(!HELP.on)return;if(e.target.closest&&(e.target.closest('#helpbtn')||e.target.closest('#helpbar')))return;
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-  if(type!=='click')return;
+  const touch=type==='pointerup'&&e.pointerType&&e.pointerType!=='mouse';
+  if(type!=='click'&&!touch)return;
   const t=helpTopicFor(helpTarget(e));helpSet(false);
+  if(touch)HELP.swallow=Date.now()+700;
   if(t&&LIB_TOPICS[t])openLibrary(t);
 },true));
 document.addEventListener('pointermove',helpHover,true);
@@ -7562,7 +7570,7 @@ matchMedia('(max-width:600px)').addEventListener?.('change',()=>{if(S.mod==='ho'
 document.addEventListener('click',e=>{if(S.mod!=='ho'||!e.target.closest||!e.target.closest('#helpbtn'))return;
   e.stopImmediatePropagation();e.preventDefault();openModule('ln');setTimeout(()=>{if(typeof helpSet==='function')helpSet(true);},250);},true);
 
-const AP_VERSION='1.39.1';
+const AP_VERSION='1.39.2';
 const AP_MIT_BODY="Permission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.";
 const AP_SMP="MuseScore General / MS Basic\nFluidR3 (original version) by Frank Wen Copyright (c) 2000-02, 2008\nMono conversion (FluidR3Mono) by Michael Cowgill Copyright (c) 2014-17\nAdaptation for MuseScore_General.sf2 by S. Christian Collins Copyright (c) 2018-19\n\n"+AP_MIT_BODY;
 const AP_MIT="Copyright (c) 2009-2026 Paul Rosen and Gregory Dyke\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.";
