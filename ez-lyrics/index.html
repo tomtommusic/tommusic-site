@@ -335,7 +335,7 @@ Ho_o_oh! Viens danser ce soir
 Page 1/1`;
 
 const CHORD = /^[\(\[]?[A-G](#|b|♯|♭)?(m|maj|min|dim|aug|sus|add|M|°|ø|\+)?\d*(sus\d*|add\d*|maj\d*|b\d+|#\d+)*(\((sus|add|maj|min|m|dim|aug|no)?\d*\))?(\/[A-G](#|b|\u266F|\u266D)?)?[\*~'!]*[\)\]]?$/;
-const FILLER = /^(\||\/|-|–|x\d+|\d+x|N\.?C\.?|\([x0-9]{4,6}\)|\.{2,}|\*|%)$/i;
+const FILLER = /^(\||\/|-|–|\(?[x\u00D7]\s*\d*\)?|\(?\d{1,2}\s*[x\u00D7]?\)?|fois|times|N\.?C\.?|\([x0-9]{4,6}\)|\.{2,}|\*|%)$/i;
 // Lettres cyrilliques et grecques qui imitent les nôtres (protection anti-copie de certains sites)
 const LOOKALIKE = {'а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x','і':'i','ј':'j','ѕ':'s','һ':'h','ԁ':'d','ɡ':'g',
   'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','У':'Y','І':'I','Ј':'J','Ѕ':'S',
