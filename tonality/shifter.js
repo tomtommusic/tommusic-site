@@ -154,6 +154,21 @@ if (typeof AudioWorkletProcessor !== 'undefined') {
     }
   }
   registerProcessor('tonality-shifter', TonalityProcessor);
+  // Écoute seulement : envoie le son original (mono) par blocs de 4096 échantillons pour l'analyse de tonalité
+  class TonalityTap extends AudioWorkletProcessor {
+    constructor() { super(); this.buf = new Float32Array(4096); this.n = 0; }
+    process(inputs, outputs) {
+      const inp = inputs[0]; if (outputs[0] && outputs[0][0]) outputs[0][0].fill(0);
+      if (!inp || !inp[0]) return true;
+      const L = inp[0], R = inp[1] || L;
+      for (let i = 0; i < L.length; i++) {
+        this.buf[this.n++] = (L[i] + R[i]) / 2;
+        if (this.n === this.buf.length) { this.port.postMessage({ chunk: this.buf }, [this.buf.buffer]); this.buf = new Float32Array(4096); this.n = 0; }
+      }
+      return true;
+    }
+  }
+  registerProcessor('tonality-tap', TonalityTap);
 } else if (typeof module !== 'undefined' && module.exports) {
   module.exports = { PitchShifter, FFT };
 }

@@ -65,20 +65,55 @@ let ctx = null, node = null, media = null, mediaSrc = null, CAP = null;
 async function ensureCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    await ctx.audioWorklet.addModule('shifter.js?v=1');
+    await ctx.audioWorklet.addModule('shifter.js?v=2');
   }
   if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) { } }
   return ctx;
 }
-function newNode(record) {
-  if (node) { try { node.disconnect(); } catch (e) { } }
-  node = new AudioWorkletNode(ctx, 'tonality-shifter', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { record, ratio: Math.pow(2, (ST * 100 + CT) / 1200) } });
-  node.port.onmessage = e => { if (e.data && e.data.chunk) onChunk(e.data.chunk); };
+// Moteur principal : Signalsmith Stretch (WASM, licence MIT), avec correction des formants pour garder le timbre de la voix.
+// Si le navigateur ne peut pas le charger, on revient au moteur maison (shifter.js).
+let ENGINE = null, tap = null, tapSink = null;
+let NATURAL = (() => { try { return localStorage.getItem('tonality-voix') !== '0'; } catch (e) { return true; } })();
+async function newNode(record) {
+  if (node) { try { node.disconnect(); } catch (e) { } node = null; }
+  if (tap) { try { tap.disconnect(); } catch (e) { } tap = null; }
+  let n = null;
+  if (ENGINE !== 'maison' && typeof window.SignalsmithStretch === 'function') {
+    try {
+      n = await window.SignalsmithStretch(ctx, { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers' });
+      ENGINE = 'signalsmith';
+    } catch (e) { console.warn('Tonality : Signalsmith Stretch indisponible, moteur maison utilisé', e); ENGINE = 'maison'; n = null; }
+  }
+  if (!n) {
+    ENGINE = 'maison';
+    n = new AudioWorkletNode(ctx, 'tonality-shifter', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { ratio: ratioNow() } });
+  }
+  node = n;
   node.connect(ctx.destination);
-  applyRatio();
+  if (ENGINE === 'signalsmith') node.start();
+  // écoute du son original (avant transposition) pour l'analyse de tonalité
+  if (record) {
+    tap = new AudioWorkletNode(ctx, 'tonality-tap', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+    tap.port.onmessage = e => { if (e.data && e.data.chunk) onChunk(e.data.chunk); };
+    if (!tapSink) { tapSink = ctx.createGain(); tapSink.gain.value = 0; tapSink.connect(ctx.destination); }
+    tap.connect(tapSink);
+  }
+  applyRatio(); syncEngine();
   return node;
 }
-function applyRatio() { if (node) node.port.postMessage({ ratio: Math.pow(2, (ST * 100 + CT) / 1200) }); }
+// branche une source sur le moteur (et sur l'écoute d'analyse s'il y en a une)
+function plug(src) { src.connect(node); if (tap) src.connect(tap); }
+const ratioNow = () => Math.pow(2, (ST * 100 + CT) / 1200);
+function applyRatio() {
+  if (!node) return;
+  if (ENGINE === 'signalsmith') node.schedule({ active: true, semitones: ST + CT / 100, formantCompensation: NATURAL && (ST !== 0 || CT !== 0), formantSemitones: 0, formantBaseHz: 0 });
+  else node.port.postMessage({ ratio: ratioNow() });
+}
+function syncEngine() {
+  const cb = $('o-voice');
+  cb.checked = NATURAL; cb.disabled = ENGINE === 'maison';
+  $('voice-note').textContent = ENGINE === 'maison' ? 'Ce navigateur utilise le moteur de secours : la correction de la voix n\'est pas offerte.' : 'Garde le timbre naturel de la voix quand tu transposes (moins d\'effet «\u00a0Chipmunks\u00a0»). Décoche-la pour comparer.';
+}
 
 /* ================= Lecteur : fichier ================= */
 function clearSource() {
@@ -138,7 +173,7 @@ function loadFile(file, keepSettings) {
 }
 async function connectMedia() {
   await ensureCtx();
-  if (!mediaSrc && media) { mediaSrc = ctx.createMediaElementSource(media); newNode(false); mediaSrc.connect(node); }
+  if (!mediaSrc && media) { mediaSrc = ctx.createMediaElementSource(media); await newNode(false); plug(mediaSrc); }
 }
 async function analyzeFile(file) {
   const st = $('src-status');
@@ -302,7 +337,7 @@ async function activate() {
   }
   try { await ensureCtx(); } catch (e) { stream.getTracks().forEach(t => t.stop()); setStatus(st, 'Le moteur audio n\'a pas pu démarrer. Recharge la page.', 'err'); return; }
   const src = ctx.createMediaStreamSource(new MediaStream([at]));
-  newNode(true); src.connect(node);
+  await newNode(true); plug(src);
   CAP = { stream, src };
   at.addEventListener('ended', () => { if (CAP && CAP.stream === stream) deactivate(false, 'Le partage s\'est arrêté. Clique sur « Activer le son transposé » pour reprendre.'); });
   if (!TR || TR.sr !== ctx.sampleRate) { TR = new KE.Tracker(ctx.sampleRate); MAXT = -1; TABT = 0; }
@@ -322,6 +357,7 @@ function deactivate(silent, msg) {
   try { c.src.disconnect(); } catch (e) { }
   c.stream.getTracks().forEach(t => t.stop());
   if (node) { try { node.disconnect(); } catch (e) { } node = null; }
+  if (tap) { try { tap.disconnect(); } catch (e) { } tap = null; }
   try { POP && !POP.closed && POP.TP && POP.TP.setBanner('Garde cette fenêtre ouverte.', false); } catch (e) { }
   if (!silent) {
     $('live').hidden = true; $('activate').hidden = false; $('howto').hidden = false;
@@ -792,6 +828,7 @@ $('tp-zero').onclick = () => setST(0);
 $('tp-range').addEventListener('input', e => setST(+e.target.value));
 $('tp-target').addEventListener('change', e => { if (e.target.value !== '') setST(+e.target.value); });
 $('cents').addEventListener('input', e => { CT = +e.target.value; applyRatio(); DIRTY = true; syncControls(); });
+$('o-voice').addEventListener('change', e => { NATURAL = e.target.checked; try { localStorage.setItem('tonality-voix', NATURAL ? '1' : '0'); } catch (er) { } applyRatio(); });
 $('cents-zero').onclick = () => { CT = 0; applyRatio(); syncControls(); };
 $('tune-440').onclick = () => { const an = shownAnalysis(); if (!an) return; CT = Math.max(-50, Math.min(50, -an.tuning)); applyRatio(); DIRTY = true; syncControls(); };
 $('o-lang').addEventListener('change', () => { try { localStorage.setItem('tonality-lang', LANG()); } catch (e) { } renderAll(); renderLib(); });
@@ -837,8 +874,9 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('beforeunload', e => { if (DIRTY || CAP) { e.preventDefault(); e.returnValue = ''; } });
 
+syncEngine();
 renderAll();
 go(location.hash === '#librairie' ? 'librairie' : 'ecouter', false);
 store.init();
 // Pour les tests
-if (/[?&]demo\b/.test(location.search)) window.__tonality = { get ANA() { return ANA; }, set ANA(v) { ANA = v; }, loadFile, renderAll, shownAnalysis, store, setST, get ST() { return ST; } };
+if (/[?&]demo\b/.test(location.search)) window.__tonality = { get ENGINE() { return ENGINE; }, get ANA() { return ANA; }, set ANA(v) { ANA = v; }, loadFile, renderAll, shownAnalysis, store, setST, get ST() { return ST; } };
