@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../img/favicon-32.png">
+<title>Tonality · Lecteur</title>
+<style>
+html,body{margin:0;height:100%;background:#06261c;color:#e6f6ef;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#wrap{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr}
+#bar{display:flex;align-items:center;gap:10px;padding:7px 12px;font-size:13px;font-weight:600;background:#04392a;border-bottom:1px solid #0b5c44}
+#bar b{color:#fff;font-weight:800}
+#bar .dot{width:9px;height:9px;border-radius:50%;background:#7fe0b8;flex:none}
+#bar.on .dot{background:#ffd166}
+#msg{margin-left:auto;opacity:.9}
+#stage{position:relative}
+#stage iframe,#stage>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+#ph{display:grid;place-items:center;text-align:center;padding:20px;font-size:15px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="bar"><span class="dot" aria-hidden="true"></span><b>Tonality · Lecteur</b><span id="msg">Garde cette fenêtre ouverte.</span></div>
+  <div id="stage"><div id="ph">Chargement de la vidéo…</div></div>
+</div>
+<script>
+'use strict';
+// Lecteur YouTube piloté par la page Tonality (même site) : Tonality capte le son de cet onglet et le transpose.
+const TP = window.TP = { player: null, ready: false, id: null, error: null, onState: null, onError: null };
+TP.setBanner = (text, on) => { document.getElementById('msg').textContent = text; document.getElementById('bar').classList.toggle('on', !!on); };
+TP.load = id => {
+  TP.id = id; TP.error = null;
+  if (TP.player && TP.ready) { TP.player.loadVideoById(id); return; }
+  if (TP.player) { try { TP.player.destroy(); } catch (e) { } }
+  const st = document.getElementById('stage'); st.innerHTML = '';
+  const d = document.createElement('div'); d.id = 'yt'; st.appendChild(d);
+  TP.ready = false;
+  TP.player = new YT.Player('yt', {
+    videoId: id, playerVars: { playsinline: 1, rel: 0, origin: location.origin },
+    events: {
+      onReady: () => { TP.ready = true; },
+      onStateChange: e => { TP.onState && TP.onState(e.data); },
+      onError: e => { TP.error = e.data; TP.onError && TP.onError(e.data); }
+    }
+  });
+};
+window.onYouTubeIframeAPIReady = () => { const id = (location.hash || '').replace('#', ''); if (/^[\w-]{11}$/.test(id)) TP.load(id); TP.api = true; };
+const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api';
+s.onerror = () => { document.getElementById('ph').textContent = 'YouTube ne répond pas. Vérifie ta connexion, puis ferme et rouvre ce lecteur.'; };
+document.head.appendChild(s);
+</script>
+</body>
+</html>

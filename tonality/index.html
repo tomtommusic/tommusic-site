@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Tonality : écoute une vidéo YouTube ou un fichier audio, transpose-la en temps réel et découvre sa tonalité et ses modulations. Par Tom Tom Music.">
+<link rel="icon" href="../img/favicon-32.png">
+<title>Tonality</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Même modèle qu'EZ Lyrics et Chart It (barre latérale + zone principale), thème vert émeraude.
+   Contrastes élevés; aucune information portée par la couleur seule (texte, contours, motifs). */
+:root{
+  --bg:#f1f8f4; --side:#f8fcfa; --panel:#ffffff; --panel-2:#dff2e9; --line:#d3e7dd; --line-hi:#a9d2be;
+  --ink:#0b231a; --muted:#45604f; --accent:#047857; --accent-hi:#065f46; --accent-ink:#ffffff;
+  --ring:rgba(4,120,87,.16); --ring-2:rgba(4,120,87,.05); --hover:#04533d; --danger:#b4232a; --shadow:rgba(6,70,50,.2);
+  --ui:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+  --read:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(900px 600px at 100% 0%, #d4efe2 0%, transparent 60%) fixed, var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
+img{max-width:100%}
+
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100%}
+/* ---------- Barre latérale ---------- */
+.side{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;max-height:100%;background:var(--side);border-right:1px solid var(--line);
+  padding:36px 14px 24px max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:34px;overflow:hidden}
+.side::after{content:"";position:absolute;left:-230px;bottom:-230px;width:460px;height:460px;border-radius:50%;pointer-events:none;
+  background:repeating-radial-gradient(circle at center, var(--ring) 0 52px, var(--ring-2) 52px 104px);
+  -webkit-mask:radial-gradient(circle, #000 0 60%, transparent 72%);mask:radial-gradient(circle, #000 0 60%, transparent 72%)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.brand svg{width:44px;height:44px}
+.brand .word{font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1.1}
+.brand .word b{color:var(--accent-hi);font-weight:800}
+nav{display:grid;gap:6px;position:relative;z-index:1}
+.tab{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:12px;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-align:left;position:relative}
+.tab svg{width:22px;height:22px;flex:none}
+.tab:hover{color:var(--ink);background:var(--panel)}
+.tab[aria-current="page"]{color:var(--accent-hi);background:var(--panel-2)}
+.tab[aria-current="page"]::before{content:"";position:absolute;left:-14px;top:6px;bottom:6px;width:4px;border-radius:0 4px 4px 0;background:var(--accent-hi)}
+.tab .count{margin-left:auto;font-size:12px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--panel-2);color:var(--accent-hi);border:1px solid var(--line-hi);text-align:center;font-variant-numeric:tabular-nums}
+
+/* ---------- Zone principale ---------- */
+main{min-width:0;padding-block:40px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.view{max-width:1180px;margin:0 auto;display:grid;gap:24px}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.head h1{margin:0;font-weight:800;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.head h1 b{color:var(--accent-hi)}
+.head p{margin:6px 0 0;color:var(--muted);max-width:70ch}
+
+.pill{box-shadow:0 10px 30px -22px var(--shadow);display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line-hi);border-radius:999px;padding:10px 10px 10px 22px;min-height:62px}
+.pill.over{border-color:var(--accent-hi);background:var(--panel-2)}
+.pill svg.ico{width:22px;height:22px;flex:none;color:var(--muted)}
+.round{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);border:0;cursor:pointer}
+.round:hover{background:var(--hover)}
+.round svg{width:20px;height:20px}
+.search{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:16px;outline:none}
+.search::placeholder{color:var(--muted)}
+.alt{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:-10px;font-size:14px;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.col{display:grid;gap:20px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px;min-width:0}
+.label{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.cardhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cardhead .label{margin-right:auto}
+.opts{display:grid;gap:8px;font-size:14px}
+.opts label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;color:var(--ink)}
+.opts input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--accent);flex:none}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.field input,.field select,select.sel,textarea{width:100%;background:var(--bg);border:1px solid var(--line-hi);border-radius:10px;padding:9px 12px;color:var(--ink);font:inherit;font-weight:600}
+select.sel{width:auto;padding:6px 10px;font-size:13px}
+textarea{font-family:var(--read);font-weight:400;font-size:15px;line-height:1.5;min-height:130px;resize:vertical}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:inherit;font-weight:700;font-size:14px;border-radius:999px;padding:9px 16px;cursor:pointer;border:1px solid var(--line-hi);background:var(--panel-2);color:var(--ink);
+  display:inline-flex;align-items:center;gap:8px;white-space:nowrap;text-decoration:none}
+.btn svg{width:17px;height:17px}
+.btn:hover{border-color:var(--accent-hi)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{background:var(--hover)}
+.btn.danger{border-color:var(--danger);color:var(--danger)}
+.btn.small{padding:7px 13px;font-size:13px}
+.btn.big{padding:12px 20px;font-size:15px}
+.btn[aria-pressed="true"]{background:var(--accent-hi);border-color:var(--accent-hi);color:#fff}
+:is(button,input,select,textarea,.round,a):focus-visible{outline:3px solid var(--accent-hi);outline-offset:2px}
+.status{font-size:14px;color:var(--muted);min-height:1.3em}
+.status.ok::before{content:"✓ ";color:var(--accent-hi);font-weight:800}
+.status.err::before{content:"⚠ ";font-weight:800;color:var(--danger)}
+.status button{font:inherit;font-weight:700;color:var(--accent-hi);background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+.note{font-size:13px;color:var(--muted);margin:0}
+
+/* Lecteur */
+.player{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#06261c;display:grid;place-items:center;color:#d6efe4;text-align:center}
+.player video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.player img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45}
+.player .ph{position:relative;padding:20px;display:grid;gap:6px;justify-items:center;font-size:14px;max-width:420px}
+.player .ph svg{width:38px;height:38px;opacity:.85}
+.player .ph strong{font-size:16px;color:#fff}
+.player.audio{aspect-ratio:auto;min-height:120px;background:var(--bg);color:var(--ink)}
+.player.audio .ph strong{color:var(--ink)}
+.howto{font-size:13.5px;color:var(--ink);background:#fff8e6;border:1px solid #e9c46a;border-left:5px solid #b7791f;border-radius:12px;padding:10px 14px;line-height:1.5}
+.howto strong{display:block}
+.howto ol{margin:4px 0 0;padding-left:20px}
+.live{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel-2);border:1px solid var(--line-hi);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:600}
+.live .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px #fff, 0 0 0 4px var(--accent);flex:none}
+.meter{flex:1;min-width:90px;height:10px;border-radius:999px;background:#fff;border:1px solid var(--line-hi);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+
+/* Transport */
+.transport{display:grid;gap:10px}
+.trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.play{width:46px;height:46px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.play:hover{background:var(--hover)}
+.play svg{width:20px;height:20px}
+.time{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;white-space:nowrap}
+input[type=range]{accent-color:var(--accent)}
+.seek{flex:1;min-width:120px}
+.ab{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.ab .pt{font-variant-numeric:tabular-nums;font-weight:700;min-width:58px}
+.ib{font:inherit;font-weight:800;font-size:13px;min-width:30px;height:30px;border-radius:8px;border:1px solid var(--line-hi);background:var(--panel);cursor:pointer;color:var(--ink);padding:0 8px}
+.ib:hover{border-color:var(--accent-hi)}
+.ib:disabled{opacity:.45;cursor:not-allowed}
+.sub{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.sub h3{margin:0;font-size:14px;font-weight:800}
+.tempo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+.tempo input{flex:1;min-width:140px}
+.tempo .val{font-weight:800;font-variant-numeric:tabular-nums;min-width:52px}
+
+/* Transposition */
+.tp{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px}
+.tpbtn{width:52px;height:52px;border-radius:50%;border:2px solid var(--accent-hi);background:#fff;color:var(--accent-hi);font:inherit;font-size:28px;font-weight:800;cursor:pointer;line-height:1;display:grid;place-items:center}
+.tpbtn:hover{background:var(--panel-2)}
+.tpval{text-align:center}
+.tpval .n{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+.tpval .u{font-size:13px;color:var(--muted);font-weight:700}
+.tprange{width:100%}
+.tpkeys{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:center;font-size:15px}
+.tpkeys .k{font-weight:800}
+.warnline{font-size:13px;color:#7a4a00;background:#fff8e6;border:1px solid #e9c46a;border-radius:10px;padding:6px 10px}
+
+/* Tonalité */
+.keybig{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kb{border:1px solid var(--line-hi);border-radius:14px;padding:12px 14px;background:var(--bg)}
+.kb .t{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.kb .v{font-size:24px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.kb .s{font-size:13px;color:var(--muted);font-weight:600}
+.kb.hl{border:2px solid var(--accent-hi);background:#fff}
+.tl{position:relative;height:58px;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden;background:repeating-linear-gradient(135deg,#fff 0 6px,#e9efec 6px 12px);cursor:pointer}
+.tl .seg{position:absolute;top:0;bottom:0;border-right:2px solid var(--ink);display:flex;flex-direction:column;justify-content:center;padding:0 8px;overflow:hidden;white-space:nowrap;font-weight:800;font-size:14px;line-height:1.15}
+.tl .seg small{font-weight:600;font-size:11px;color:var(--muted)}
+.tl .seg.p0{background:#fff}
+.tl .seg.p1{background:#e3f4ec;background-image:radial-gradient(#9fcfb8 1px,transparent 1.4px);background-size:7px 7px}
+.tl .seg.p2{background:#f3f7f5;background-image:repeating-linear-gradient(0deg,transparent 0 6px,#cfe2d8 6px 7px)}
+.tl .head{position:absolute;top:-2px;bottom:-2px;width:3px;background:#b4232a;margin-left:-1px;pointer-events:none}
+.tl .head::before{content:"";position:absolute;top:0;left:-5px;border:6.5px solid transparent;border-top-color:#b4232a}
+.tl .loop{position:absolute;top:0;bottom:0;border-left:3px solid var(--ink);border-right:3px solid var(--ink);background:rgba(11,35,26,.12);pointer-events:none}
+.tl .unheard{position:absolute;top:0;bottom:0;right:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);pointer-events:none;padding:0 6px;text-align:center}
+.tlscale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:4px}
+.mods{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mod{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.mod .when{font:inherit;font-weight:800;font-variant-numeric:tabular-nums;border:1px solid var(--line-hi);background:var(--panel-2);border-radius:8px;padding:4px 9px;cursor:pointer;color:var(--ink)}
+.mod .when:hover{border-color:var(--accent-hi)}
+.mod .what{display:grid;gap:2px}
+.mod .k{font-weight:800;font-size:16px}
+.mod .d{font-size:13px;color:var(--muted);font-weight:600}
+.mod .flag{display:inline-block;font-size:12px;font-weight:800;border:1.5px dashed #8a5a00;color:#6b4500;border-radius:6px;padding:0 6px;margin-left:6px}
+.mod select{margin-top:4px}
+.capo{display:flex;flex-wrap:wrap;gap:8px}
+.capo button{font:inherit;font-size:14px;border:1px solid var(--line-hi);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;text-align:left;color:var(--ink);display:grid;line-height:1.25}
+.capo button b{font-size:15px}
+.capo button span{font-size:12px;color:var(--muted);font-weight:600}
+.capo button[aria-pressed="true"]{border:2px solid var(--accent-hi);background:var(--panel-2)}
+.capo button[aria-pressed="true"] b::before{content:"✓ "}
+.empty-k{border:1px dashed var(--line-hi);border-radius:14px;padding:22px 16px;text-align:center;color:var(--muted);display:grid;gap:4px}
+.empty-k strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line-hi);background:var(--panel-2);border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--ink);font-variant-numeric:tabular-nums}
+.chip:hover{border-color:var(--accent-hi)}
+details.adv{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+details.adv summary{cursor:pointer;font-weight:700;font-size:14px}
+details.adv .in{display:grid;gap:10px;margin-top:10px}
+
+/* ---------- Librairie ---------- */
+.lib-meta{color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.artist-group{display:grid;gap:10px}
+.artist-group h2{margin:0;display:flex;align-items:baseline;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.artist-group h2 span{font-size:13px;color:var(--muted);font-weight:600}
+.files{display:grid;gap:8px;list-style:none;margin:0;padding:0}
+.file{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px;flex-wrap:wrap}
+.file .doc{width:44px;height:44px;flex:none;border-radius:10px;background:var(--panel-2);border:1px solid var(--line-hi);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--accent-hi);text-align:center;line-height:1.05}
+.file .info{flex:1;min-width:180px}
+.file .name{font-weight:700;overflow-wrap:anywhere}
+.file .sub2{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.file .nt{font-size:13px;color:var(--ink);font-family:var(--read);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62ch}
+.file .acts{display:flex;gap:8px;flex-wrap:wrap}
+.empty{background:var(--panel);border:1px dashed var(--line-hi);border-radius:18px;padding:36px 24px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.empty strong{color:var(--ink);font-size:17px}
+.warn{display:flex;gap:12px;align-items:flex-start;background:#fff8e6;border:1px solid #e9c46a;border-left:5px solid #b7791f;border-radius:12px;padding:12px 16px;color:#3d2c05;font-size:14px;line-height:1.5}
+.warn svg{width:22px;height:22px;flex:none;color:#8a5a00;margin-top:1px}
+.warn strong{display:block;margin-bottom:2px}
+
+@media (max-width:980px){ .grid{grid-template-columns:minmax(0,1fr)} }
+a.tab{text-decoration:none}
+/* Bande promo + pied de page */
+.promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#063b2c,#047857);color:#fff;border-radius:20px;padding:18px 22px}
+.promo img{width:96px;height:96px;border-radius:12px;flex:none;box-shadow:0 10px 24px -12px rgba(0,0,0,.6)}
+.promo .pt{flex:1;min-width:200px}
+.promo .pk{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#c9f0de}
+.promo h2{margin:2px 0 0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.promo .pb{display:flex;gap:8px;flex-wrap:wrap}
+.promo .btn{background:#fff;color:#063b2c;border-color:#fff}
+.promo .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
+.foot{max-width:1180px;margin:24px auto 0;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:13px;color:var(--muted)}
+.foot nav{display:flex;gap:16px;flex-wrap:wrap}
+.foot a{color:var(--accent-hi);font-weight:700;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+.toplinks{max-width:1180px;margin:-16px auto 12px;display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.toplinks a{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;border:1px solid transparent}
+.toplinks a:hover{color:var(--accent-hi);background:var(--panel);border-color:var(--line-hi)}
+.toplinks svg{width:17px;height:17px}
+@media (max-width:720px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .side{position:sticky;height:auto;flex-direction:row;align-items:center;gap:12px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));
+    border-right:0;border-bottom:1px solid var(--line);z-index:5}
+  .side::after{display:none}
+  .brand{flex-direction:row;gap:8px}
+  .brand svg{width:28px;height:28px}
+  .brand .word{font-size:15px}
+  nav{display:flex;margin-left:auto;gap:4px}
+  .tab{padding:8px 10px;font-size:14px;gap:6px}
+  .tab svg{width:18px;height:18px}
+  .tab[aria-current="page"]::before{display:none}
+  .tab .count{display:none}
+  main{padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .fields,.keybig{grid-template-columns:1fr}
+  .pill{padding-left:16px}
+}
+@media (max-width:360px){ .tab .t{display:none} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#065f46"/></linearGradient></defs>
+        <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#g)"/>
+        <path d="M12 30l7-7 6 6 11-12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M30 17h6v6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="word"><b>Tona</b>lity</div>
+    </div>
+    <nav aria-label="Sections">
+      <button class="tab" id="t-ec" data-view="ecouter" aria-current="page" aria-label="Écouter">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg>
+        <span class="t">Écouter</span></button>
+      <button class="tab" id="t-lib" data-view="librairie" aria-label="Librairie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
+    </nav>
+  </aside>
+
+  <main>
+    <nav class="toplinks" aria-label="Tom Tom Music">
+      <a href="../apps/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>Apps</a>
+      <a href="../chart-it/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M13 5v14M18 5v14"/></svg>Chart It</a>
+      <a href="../ez-lyrics/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>EZ Lyrics</a>
+      <a href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>tommusic.ca</a>
+    </nav>
+
+    <!-- ================= ÉCOUTER ================= -->
+    <section class="view" id="v-ec" aria-labelledby="h-ec">
+      <div class="head">
+        <div>
+          <h1 id="h-ec">Transposer une chanson <b>en temps réel</b></h1>
+          <p>Colle un lien YouTube ou ouvre un fichier audio ou vidéo. Monte ou descends la chanson d'autant de demi-tons que tu veux, sans changer le tempo. Tonality te donne aussi la tonalité de départ et les modulations.</p>
+        </div>
+      </div>
+
+      <form class="pill" id="url-form">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+        <input class="search" id="url" type="url" inputmode="url" placeholder="Colle un lien YouTube…" aria-label="Lien YouTube" autocomplete="off">
+        <button class="round" type="submit" title="Charger la vidéo" aria-label="Charger la vidéo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+      <div class="alt">
+        <span>ou</span>
+        <label class="btn small" style="position:relative"><input type="file" id="file" accept="audio/*,video/*,.mp3,.m4a,.wav,.mp4,.mov,.webm,.ogg,.flac,.aac" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" aria-label="Ouvrir un fichier audio ou vidéo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Ouvrir un fichier</label>
+        <button class="btn small" type="button" id="other-tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Transposer un autre onglet</button>
+      </div>
+
+      <div class="grid">
+        <!-- ===== Colonne gauche : source, lecture, boucle, tempo ===== -->
+        <div class="col">
+          <div class="card">
+            <div class="cardhead"><p class="label">Source</p><button class="btn small" type="button" id="reopen" hidden>Rouvrir le lecteur</button></div>
+            <div class="player" id="player-box">
+              <div class="ph" id="player-ph">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>
+                <strong>Aucune chanson pour l'instant</strong>
+                <span>Colle un lien YouTube plus haut, ou ouvre un fichier.</span>
+              </div>
+            </div>
+
+            <div id="cap-box" hidden style="display:grid;gap:12px">
+              <div class="howto" id="howto">
+                <strong>Pour entendre la transposition :</strong>
+                <ol><li>Clique sur <b>Activer le son transposé</b>.</li><li>Dans la fenêtre de Chrome, choisis l'onglet <b id="howto-tab">« Tonality · Lecteur »</b>.</li><li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché, puis clique sur <b>Partager</b>.</li></ol>
+              </div>
+              <div class="toolbar">
+                <button class="btn primary big" type="button" id="activate">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Activer le son transposé</button>
+              </div>
+              <div class="live" id="live" hidden>
+                <span class="dot" aria-hidden="true"></span><span id="live-text">Son transposé actif</span>
+                <div class="meter" title="Niveau du son capté" aria-hidden="true"><i id="level"></i></div>
+                <button class="btn small" type="button" id="deactivate">Arrêter</button>
+              </div>
+            </div>
+            <div class="status" id="src-status" role="status"></div>
+
+            <div class="transport" id="transport" hidden>
+              <div class="trow">
+                <button class="play" type="button" id="play" aria-label="Lecture">
+                  <svg id="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                  <svg id="ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+                <button class="ib" type="button" id="back5" title="Reculer de 5 secondes" aria-label="Reculer de 5 secondes">−5 s</button>
+                <input class="seek" type="range" id="seek" min="0" max="100" step="0.1" value="0" aria-label="Position dans la chanson">
+                <span class="time" id="time">0:00 / 0:00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="practice" hidden>
+            <p class="label">Pratique</p>
+            <div class="sub" style="border-top:0;padding-top:0">
+              <h3>Boucle A-B</h3>
+              <div class="ab">
+                <button class="btn small" type="button" id="set-a">Point A ici</button>
+                <span class="pt" id="pt-a" aria-label="Point A">A —</span>
+                <button class="ib" type="button" id="a-m" aria-label="Reculer le point A" title="Point A : 0,1 s plus tôt">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A" title="Point A : 0,1 s plus tard">▶</button>
+              </div>
+              <div class="ab">
+                <button class="btn small" type="button" id="set-b">Point B ici</button>
+                <span class="pt" id="pt-b" aria-label="Point B">B —</span>
+                <button class="ib" type="button" id="b-m" aria-label="Reculer le point B" title="Point B : 0,1 s plus tôt">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B" title="Point B : 0,1 s plus tard">▶</button>
+              </div>
+              <div class="toolbar">
+                <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
+                <button class="btn small" type="button" id="go-a">Aller au point A</button>
+                <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
+              </div>
+            </div>
+            <div class="sub">
+              <h3>Tempo</h3>
+              <div class="tempo">
+                <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
+                <span class="val" id="tempo-val">100 %</span>
+                <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
+              </div>
+              <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Colonne droite : transposition, tonalité, capo ===== -->
+        <div class="col">
+          <div class="card">
+            <div class="cardhead"><p class="label">Transposition</p>
+              <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
+            <div class="tp">
+              <button class="tpbtn" type="button" id="tp-down" aria-label="Descendre d'un demi-ton">−</button>
+              <div class="tpval"><div class="n" id="tp-n">0</div><div class="u" id="tp-u">demi-ton (tonalité originale)</div></div>
+              <button class="tpbtn" type="button" id="tp-up" aria-label="Monter d'un demi-ton">+</button>
+            </div>
+            <input class="tprange" type="range" id="tp-range" min="-12" max="12" step="1" value="0" aria-label="Transposition en demi-tons">
+            <div class="tpkeys" id="tp-keys"></div>
+            <div class="toolbar" style="justify-content:center">
+              <button class="btn small" type="button" id="tp-zero">Tonalité originale</button>
+              <label class="note" for="tp-target">Transposer vers</label>
+              <select class="sel" id="tp-target" aria-label="Tonalité voulue"></select>
+            </div>
+            <div class="warnline" id="tp-warn" hidden>Au-delà de 5 demi-tons, le son devient moins naturel (voix un peu métallique).</div>
+            <div class="note" id="tp-hint" hidden></div>
+            <details class="adv" id="adv">
+              <summary>Accordage fin</summary>
+              <div class="in">
+                <div class="tempo">
+                  <input type="range" id="cents" min="-50" max="50" step="1" value="0" aria-label="Accordage fin en cents">
+                  <span class="val" id="cents-val">0 cent</span>
+                </div>
+                <p class="note" id="tuning-note">Utile quand un enregistrement n'est pas accordé à La 440 : ton instrument sonnera juste avec la chanson.</p>
+                <div class="toolbar"><button class="btn small" type="button" id="tune-440" disabled>Ramener à La 440</button><button class="btn small" type="button" id="cents-zero">0 cent</button></div>
+              </div>
+            </details>
+          </div>
+
+          <div class="card" id="keys-card">
+            <div class="cardhead"><p class="label">Tonalité et modulations</p><span class="note" id="an-state"></span></div>
+            <div id="keys-empty" class="empty-k"><strong>Pas encore d'analyse</strong><span id="keys-empty-t">Ouvre un fichier, ou active le son transposé d'une vidéo : la tonalité apparaît pendant l'écoute.</span></div>
+            <div id="keys-body" hidden style="display:grid;gap:14px">
+              <div class="keybig">
+                <div class="kb"><div class="t">Tonalité de départ</div><div class="v" id="k-start">—</div><div class="s" id="k-start-s"></div></div>
+                <div class="kb hl"><div class="t" id="k-tr-t">Ce que tu entends</div><div class="v" id="k-tr">—</div><div class="s" id="k-tr-s"></div></div>
+              </div>
+              <div>
+                <div class="tl" id="tl" role="img" aria-label="Ligne du temps des tonalités"></div>
+                <div class="tlscale"><span id="tl-a">0:00</span><span id="tl-b"></span></div>
+              </div>
+              <ul class="mods" id="mods"></ul>
+              <p class="note" id="tuning-line"></p>
+            </div>
+          </div>
+
+          <div class="card" id="capo-card" hidden>
+            <div class="cardhead"><p class="label">Capo pour la guitare</p><span class="note" id="capo-for"></span></div>
+            <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
+            <p class="note" id="capo-note"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Fiche : titre, notes, enregistrement ===== -->
+      <div class="card">
+        <p class="label">Fiche de la chanson</p>
+        <div class="fields">
+          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
+          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+        </div>
+        <div class="field">
+          <label for="notes">Notes personnelles</label>
+          <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
+        </div>
+        <div class="toolbar">
+          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
+          <div class="chips" id="stamps" aria-label="Moments notés"></div>
+          <span style="margin-left:auto"></span>
+          <button class="btn small primary" id="save" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
+        </div>
+        <div class="status" id="status" role="status"></div>
+        <p class="note">La librairie garde le lien, la transposition, le tempo, la boucle, la tonalité et tes notes. Le son, lui, n'est jamais enregistré.</p>
+      </div>
+    </section>
+
+    <!-- ================= LIBRAIRIE ================= -->
+    <section class="view" id="v-lib" aria-labelledby="h-lib" hidden>
+      <div class="head">
+        <div>
+          <h1 id="h-lib">Librairie</h1>
+          <p class="lib-meta" id="lib-meta">Chargement…</p>
+        </div>
+      </div>
+      <div class="pill">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input class="search" id="q" type="search" placeholder="Chercher une chanson, un artiste ou une note…" aria-label="Chercher dans la librairie">
+      </div>
+      <div class="warn" id="lib-warn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>
+        <div><strong>Attention : ne supprime pas les données de ce site.</strong>Ta librairie est gardée dans ce navigateur seulement. Si tu effaces les « cookies et données de site » ou si tu utilises la navigation privée, tes chansons et tes notes seront supprimées.</div>
+      </div>
+      <div class="status" id="lib-status" role="status"></div>
+      <div id="lib" style="display:grid;gap:28px"></div>
+      <p class="note" id="lib-where"></p>
+    </section>
+
+    <aside class="promo" aria-label="Run Like a Thief">
+      <img src="../img/run-like-a-thief.jpg" alt="Pochette du single Run Like a Thief" width="96" height="96" loading="lazy">
+      <div class="pt">
+        <p class="pk">Le dernier single du créateur de Tonality</p>
+        <h2>Run Like a Thief · TOM</h2>
+      </div>
+      <div class="pb">
+        <a class="btn" href="https://open.spotify.com/artist/5U2HKZJrJyO5o8Vr5p0pm9">Écouter sur Spotify</a>
+        <a class="btn ghost" href="https://music.apple.com/ca/artist/tom/1762424938">Apple Music</a>
+      </div>
+    </aside>
+    <footer class="foot">
+      <nav aria-label="Autres pages"><a href="../">TOM · accueil</a><a href="../apps/">Apps</a><a href="../ez-lyrics/">EZ Lyrics</a><a href="../chart-it/">Chart It</a><a href="../musidev/">MusiDev</a></nav>
+      <span>© 2026 <a href="../">Tom Tom Music</a> · Danville, Québec</span>
+    </footer>
+  </main>
+</div>
+
+<script src="keys.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
