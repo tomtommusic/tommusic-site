@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /musidev/app/
+Disallow: /tonality/moteur.html
+Disallow: /apercu-lecteurs.html
+
+Sitemap: https://tommusic.ca/sitemap.xml
