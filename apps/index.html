@@ -11,8 +11,15 @@
 <link rel="stylesheet" href="../artist.css?v=7">
 <script src="../lang.js?v=3"></script>
 <style>
-.ahead{position:relative;padding:130px 0 46px;background:#203029 url(../img/route.jpg) 62% 70%/cover no-repeat}
-.ahead::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.86) 0%,rgb(14 10 6/.6) 50%,rgb(14 10 6/.3) 100%),linear-gradient(0deg,var(--bg) 0%,transparent 35%)}
+/* fond : la photo de la route reste visible derrière toute la page (fixe, assombrie) */
+html{background:var(--bg)}
+body{background:transparent}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgb(14 10 6/.35) 0%,rgb(14 10 6/.72) 45%,rgb(14 10 6/.84) 100%),#203029 url(../img/route.jpg) 62% 70%/cover no-repeat}
+.ahead{position:relative;padding:130px 0 46px}
+.ahead::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgb(14 10 6/.55) 0%,transparent 70%);-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent);mask-image:linear-gradient(180deg,#000 60%,transparent)}
+.ahead h1,.ahead p{text-shadow:0 2px 8px rgb(0 0 0/.6)}
+.apps .md{background:rgb(30 23 16/.78);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+footer{background:rgb(14 10 6/.6)}
 .ahead .wrap{position:relative}
 .ahead h1{display:flex;align-items:center;gap:16px;margin:0 0 12px;font:400 clamp(2.4rem,6vw,3.4rem)/1 Ultra,Georgia,serif;letter-spacing:.03em;color:var(--cream)}
 .ahead h1::after{content:"";flex:1;height:1px;background:var(--cream2);opacity:.5}
