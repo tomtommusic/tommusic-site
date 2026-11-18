@@ -259,8 +259,13 @@ a.tab{text-decoration:none}
 .qbar .qv span{font-size:12px;font-weight:700;color:#c9f0de;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
 .qbar .q0{height:34px;padding:0 12px;border-radius:999px;background:#0b4a36;color:#fff;font-size:13px;font-weight:800}
 .qbar .q0:disabled{opacity:.45;cursor:default}
+.qbar .qa{height:38px;padding:0 14px;border-radius:999px;background:#ffd166;color:#2b1d00;font-size:14px;font-weight:800;white-space:nowrap}
+.qbar .qa:hover{background:#ffe08a}
+.qbar.off .qv span{color:#ffd166}
+.qbar.off .qv span::before{content:"⚠ "}
 body.qbar-on main{padding-bottom:110px}
 @media (max-width:380px){ .qbar{gap:6px;padding:6px 8px} .qbar .qv{min-width:78px} .qbar .q0{display:none} }
+@media (max-width:430px){ .qbar.off .q0{display:none} .qbar.off .qp{display:none} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -525,9 +530,10 @@ body.qbar-on main{padding-bottom:110px}
   <div class="qv"><b id="q-n">0</b><span id="q-k">demi-ton</span></div>
   <button class="qs" type="button" id="q-up" aria-label="Monter d'un demi-ton">+</button>
   <button class="q0" type="button" id="q-zero" title="Revenir à la tonalité originale">0</button>
+  <button class="qa" type="button" id="q-act" hidden>Activer le son</button>
 </div>
 <script src="audio-engine.js?v=3"></script>
 <script src="keys.js?v=2"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

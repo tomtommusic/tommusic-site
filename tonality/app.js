@@ -298,7 +298,7 @@ function engineOn(kind) {
   $('activate').hidden = true; $('howto').hidden = true; $('live').hidden = false;
   setStatus($('src-status'), 'Son transposé actif. Fais jouer la vidéo : la tonalité apparaît pendant l\'écoute. La petite fenêtre « Moteur audio » peut rester derrière, mais ne la ferme pas.', 'ok');
   const p = ytp(); if (p) { try { if (p.getPlayerState() !== 1) p.playVideo(); } catch (e) { } }
-  renderAll();
+  renderAll(); syncBar();
 }
 // Autre onglet : cette page capte l'autre onglet et fait sortir le son transposé
 async function captureOtherTab() {
@@ -487,7 +487,12 @@ function syncBar() {
   const an = shownAnalysis();
   let k = null;
   if (an) { const i = Math.max(0, curSegIdx()); k = shiftKey(an.segments[i].key, ST); }
-  $('q-k').textContent = k ? keyName(k) : (ST === 0 ? 'original' : pl(ST, 'demi-ton', 'demi-tons'));
+  // YouTube ou autre onglet : tant que le son transposé n'est pas activé, on entend l'original — on le dit clairement
+  const needsCap = !!SRC && (SRC.type === 'youtube' || SRC.type === 'tab') && !CAP;
+  const off = needsCap && (ST !== 0 || CT !== 0);
+  $('qbar').classList.toggle('off', off);
+  $('q-act').hidden = !(needsCap && canCapture);
+  $('q-k').textContent = off ? (canCapture ? 'pas transposé' : 'impossible ici') : k ? keyName(k) : (ST === 0 ? 'original' : pl(ST, 'demi-ton', 'demi-tons'));
   $('q-zero').disabled = ST === 0;
   $('q-play').hidden = !P.canSeek();
   updateBarVisibility();
@@ -831,6 +836,7 @@ $('q-up').onclick = () => setST(ST + 1);
 $('q-down').onclick = () => setST(ST - 1);
 $('q-zero').onclick = () => setST(0);
 $('q-play').onclick = togglePlay;
+$('q-act').onclick = activate;
 // la barre apparaît quand les boutons de transposition principaux ne sont plus à l'écran
 if ('IntersectionObserver' in window) {
   new IntersectionObserver(es => { tpCardVisible = es[0].isIntersecting; updateBarVisibility(); }, { threshold: 0.15 }).observe($('tp-n').closest('.tp'));
@@ -892,4 +898,4 @@ renderAll();
 go(location.hash === '#librairie' ? 'librairie' : 'ecouter', false);
 store.init();
 // Pour les tests
-if (/[?&]demo\b/.test(location.search)) window.__tonality = { get ENGINE() { return ENGINE; }, get ANA() { return ANA; }, set ANA(v) { ANA = v; }, loadFile, renderAll, shownAnalysis, store, setST, get ST() { return ST; } };
+if (/[?&]demo\b/.test(location.search)) window.__tonality = { get ENGINE() { return ENGINE; }, get eng() { return eng; }, get ctx() { return ctx; }, get ANA() { return ANA; }, set ANA(v) { ANA = v; }, loadFile, renderAll, shownAnalysis, store, setST, get ST() { return ST; } };
