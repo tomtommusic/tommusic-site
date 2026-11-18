@@ -428,8 +428,9 @@ function applyTempo() {
 }
 function updateTransport() {
   const playing = P.playing();
-  $('ic-play').hidden = playing; $('ic-pause').hidden = !playing;
+  $('ic-play').toggleAttribute('hidden', playing); $('ic-pause').toggleAttribute('hidden', !playing);
   $('play').setAttribute('aria-label', playing ? 'Pause' : 'Lecture');
+  $('q-ic-play').toggleAttribute('hidden', playing); $('q-ic-pause').toggleAttribute('hidden', !playing); $('q-play').setAttribute('aria-label', playing ? 'Pause' : 'Lecture');
   const t = P.time(), d = P.dur();
   if (t != null) {
     const sk = $('seek');
@@ -481,7 +482,23 @@ function curSegIdx() {
 
 /* ================= Rendu ================= */
 function renderAll() { syncControls(); renderTp(); renderKeys(); renderCapo(); renderStamps(); updateTransport(); }
+function syncBar() {
+  $('q-n').textContent = signed(ST);
+  const an = shownAnalysis();
+  let k = null;
+  if (an) { const i = Math.max(0, curSegIdx()); k = shiftKey(an.segments[i].key, ST); }
+  $('q-k').textContent = k ? keyName(k) : (ST === 0 ? 'original' : pl(ST, 'demi-ton', 'demi-tons'));
+  $('q-zero').disabled = ST === 0;
+  $('q-play').hidden = !P.canSeek();
+  updateBarVisibility();
+}
+let tpCardVisible = true;
+function updateBarVisibility() {
+  const show = !!SRC && !$('v-ec').hidden && !tpCardVisible;
+  $('qbar').hidden = !show; document.body.classList.toggle('qbar-on', show);
+}
 function syncControls() {
+  syncBar();
   $('tp-n').textContent = signed(ST);
   $('tp-range').value = ST;
   $('tp-u').textContent = ST === 0 ? 'demi-ton (tonalité originale)' : (ST > 0 ? 'demi-' + pl(ST, 'ton plus haut', 'tons plus haut') : 'demi-' + pl(ST, 'ton plus bas', 'tons plus bas'));
@@ -598,7 +615,7 @@ function renderNow() {
   const an = shownAnalysis(); if (!an) return;
   const i = Math.max(0, curSegIdx()), s = an.segments[i], k = shiftKey(s.key, ST);
   $('k-tr-t').textContent = an.segments.length > 1 && P.time() != null ? 'Ce que tu entends maintenant' : 'Ce que tu entends';
-  $('k-tr').textContent = keyName(k);
+  $('k-tr').textContent = keyName(k); syncBar();
   $('k-tr-s').textContent = ST ? `transposée de ${signed(ST)} ${pl(ST, 'demi-ton', 'demi-tons')}` : 'tonalité originale';
 }
 /* ---- Capo ---- */
@@ -777,6 +794,7 @@ function go(view, push = true) {
   $('t-ec').removeAttribute('aria-current'); $('t-lib').removeAttribute('aria-current');
   (lib ? $('t-lib') : $('t-ec')).setAttribute('aria-current', 'page');
   if (lib) renderLib();
+  updateBarVisibility();
   if (push && location.hash !== '#' + view) try { history.replaceState(null, '', '#' + view); } catch (e) { location.hash = view; }
   window.scrollTo(0, 0);
 }
@@ -809,6 +827,14 @@ $('seek').addEventListener('input', e => P.seek(+e.target.value));
 // transposition
 const setST = v => { ST = Math.max(-12, Math.min(12, v)); applyRatio(); DIRTY = true; syncControls(); renderTp(); renderKeys(); renderCapo(); };
 $('tp-up').onclick = () => setST(ST + 1);
+$('q-up').onclick = () => setST(ST + 1);
+$('q-down').onclick = () => setST(ST - 1);
+$('q-zero').onclick = () => setST(0);
+$('q-play').onclick = togglePlay;
+// la barre apparaît quand les boutons de transposition principaux ne sont plus à l'écran
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => { tpCardVisible = es[0].isIntersecting; updateBarVisibility(); }, { threshold: 0.15 }).observe($('tp-n').closest('.tp'));
+} else tpCardVisible = false;
 $('tp-down').onclick = () => setST(ST - 1);
 $('tp-zero').onclick = () => setST(0);
 $('tp-range').addEventListener('input', e => setST(+e.target.value));

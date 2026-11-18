@@ -245,6 +245,22 @@ a.tab{text-decoration:none}
   .pill{padding-left:16px}
 }
 @media (max-width:360px){ .tab .t{display:none} }
+
+/* Barre de transposition compacte (collée en bas quand la carte Transposition n'est pas visible) */
+.qbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:10px;
+  background:#06261c;color:#fff;border-radius:999px;padding:8px 10px;box-shadow:0 14px 34px -12px rgba(0,0,0,.55);max-width:calc(100vw - 20px)}
+.qbar button{font:inherit;cursor:pointer;border:0;display:grid;place-items:center;flex:none}
+.qbar .qp{width:44px;height:44px;border-radius:50%;background:#fff;color:#06261c}
+.qbar .qp svg{width:18px;height:18px}
+.qbar .qs{width:44px;height:44px;border-radius:50%;background:transparent;color:#fff;border:2px solid #7fe0b8;font-size:24px;font-weight:800;line-height:1}
+.qbar .qs:hover{background:#0b4a36}
+.qbar .qv{min-width:92px;text-align:center;line-height:1.1;display:grid}
+.qbar .qv b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.qbar .qv span{font-size:12px;font-weight:700;color:#c9f0de;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.qbar .q0{height:34px;padding:0 12px;border-radius:999px;background:#0b4a36;color:#fff;font-size:13px;font-weight:800}
+.qbar .q0:disabled{opacity:.45;cursor:default}
+body.qbar-on main{padding-bottom:110px}
+@media (max-width:380px){ .qbar{gap:6px;padding:6px 8px} .qbar .qv{min-width:78px} .qbar .q0{display:none} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -500,8 +516,18 @@ a.tab{text-decoration:none}
 </div>
 
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
+
+<div class="qbar" id="qbar" role="group" aria-label="Transposition rapide" hidden>
+  <button class="qp" type="button" id="q-play" aria-label="Lecture">
+    <svg id="q-ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    <svg id="q-ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+  <button class="qs" type="button" id="q-down" aria-label="Descendre d'un demi-ton">−</button>
+  <div class="qv"><b id="q-n">0</b><span id="q-k">demi-ton</span></div>
+  <button class="qs" type="button" id="q-up" aria-label="Monter d'un demi-ton">+</button>
+  <button class="q0" type="button" id="q-zero" title="Revenir à la tonalité originale">0</button>
+</div>
 <script src="audio-engine.js?v=3"></script>
 <script src="keys.js?v=2"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
