@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../img/favicon-32.png">
+<title>Tonality · Moteur audio</title>
+<style>
+:root{--ink:#0b231a;--muted:#45604f;--accent:#047857;--hi:#065f46;--bg:#f1f8f4;--line:#a9d2be}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.45}
+main{padding:16px 18px;display:grid;gap:12px}
+h1{margin:0;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
+h1 .dot{width:11px;height:11px;border-radius:50%;background:#9ab3a7;flex:none}
+body.on h1 .dot{background:var(--accent);box-shadow:0 0 0 3px #fff,0 0 0 4px var(--accent)}
+ol{margin:0;padding-left:20px}
+button{font:inherit;font-weight:800;font-size:15px;border:0;border-radius:999px;padding:12px 18px;background:var(--accent);color:#fff;cursor:pointer}
+button:hover{background:var(--hi)}
+button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:700;padding:8px 14px;font-size:14px}
+.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.msg{font-size:14px;color:var(--muted);min-height:1.3em}
+.msg.err{color:#b4232a;font-weight:600}
+.meter{height:10px;border-radius:999px;background:#fff;border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--accent)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1><span class="dot" aria-hidden="true"></span><span id="title">Moteur audio de Tonality</span></h1>
+  <div id="setup">
+    <ol>
+      <li>Clique sur <b>Choisir l'onglet Tonality</b>.</li>
+      <li>Dans la fenêtre de Chrome, choisis l'onglet <b>« Tonality »</b>.</li>
+      <li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché, puis clique sur <b>Partager</b>.</li>
+    </ol>
+  </div>
+  <div><button id="go" type="button">Choisir l'onglet Tonality</button></div>
+  <div class="box" id="on" hidden>
+    <b>Son transposé actif.</b> Tu peux retourner dans Tonality : cette fenêtre peut rester derrière, mais <b>ne la ferme pas</b>.
+    <div class="meter" style="margin-top:8px" aria-hidden="true"><i id="level"></i></div>
+    <div style="margin-top:8px"><button class="ghost" id="back" type="button">Retourner à Tonality</button> <button class="ghost" id="stop" type="button">Arrêter</button></div>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+</main>
+<script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
+<script src="audio-engine.js?v=3"></script>
+<script>
+'use strict';
+// Cette fenêtre capte l'onglet Tonality (où joue la vidéo), le rend muet et fait sortir le son transposé.
+// Le son sort d'ici, pas de l'onglet capté : pas d'écho. Tonality la pilote directement (même site).
+const $ = id => document.getElementById(id);
+const ENG = window.ENG = { state: 'idle', kind: null, params: { st: 0, ct: 0, natural: true }, onChunk: null, onState: null, level: 0 };
+let ctx = null, eng = null, stream = null;
+const notify = msg => { try { ENG.onState && ENG.onState(ENG.state, msg || '', ENG.kind); } catch (e) { } };
+const say = (t, err) => { $('msg').textContent = t || ''; $('msg').className = 'msg' + (err ? ' err' : ''); };
+ENG.set = p => { Object.assign(ENG.params, p || {}); if (eng) eng.set(ENG.params); };
+ENG.stop = msg => {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; if (eng) eng.dispose(); eng = null;
+  ENG.state = 'idle'; document.body.classList.remove('on');
+  $('on').hidden = true; $('go').hidden = false; $('setup').hidden = false;
+  say(msg || 'Son transposé arrêté.');
+  notify(msg);
+};
+$('go').onclick = async () => {
+  // AudioContext créé dans le clic (règles de lecture automatique des navigateurs)
+  if (!ctx) ctx = new AudioContext({ latencyHint: 'interactive' });
+  let controller = null; try { controller = window.CaptureController ? new CaptureController() : null; } catch (e) { }
+  say('Choisis l\'onglet « Tonality » dans la fenêtre de Chrome…');
+  try {
+    const o = {
+      video: { displaySurface: 'browser', frameRate: 1, width: 320 },
+      audio: { suppressLocalAudioPlayback: true, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      preferCurrentTab: false, selfBrowserSurface: 'exclude', systemAudio: 'exclude', surfaceSwitching: 'include', monitorTypeSurfaces: 'exclude'
+    };
+    if (controller) o.controller = controller;
+    stream = await navigator.mediaDevices.getDisplayMedia(o);
+    try { controller && controller.setFocusBehavior('focus-captured-surface'); } catch (e) { }
+  } catch (e) {
+    say(e && e.name === 'NotAllowedError' ? 'Partage annulé. Clique de nouveau sur « Choisir l\'onglet Tonality ».' : 'Impossible de capter le son dans ce navigateur. Essaie Chrome ou Edge sur un ordinateur.', true);
+    return;
+  }
+  const at = stream.getAudioTracks()[0];
+  if (!at) { stream.getTracks().forEach(t => t.stop()); stream = null; say('Aucun son partagé. Recommence et garde « Partager aussi l\'audio de l\'onglet » coché.', true); return; }
+  try {
+    await ctx.resume();
+    eng = await TonalityAudio.build(ctx, { params: ENG.params, onChunk: (c, sr) => { let e = 0; for (let i = 0; i < c.length; i += 4) e += c[i] * c[i]; ENG.level = Math.sqrt(e / (c.length / 4)); try { ENG.onChunk && ENG.onChunk(c, sr); } catch (er) { } } });
+  } catch (e) { stream.getTracks().forEach(t => t.stop()); stream = null; say('Le moteur audio n\'a pas pu démarrer. Ferme cette fenêtre et recommence.', true); return; }
+  eng.plug(ctx.createMediaStreamSource(new MediaStream([at])));
+  at.addEventListener('ended', () => { if (ENG.state === 'active') ENG.stop('Le partage s\'est arrêté.'); });
+  ENG.kind = eng.kind; ENG.state = 'active';
+  document.body.classList.add('on'); $('on').hidden = false; $('go').hidden = true; $('setup').hidden = true;
+  $('title').textContent = 'Moteur audio de Tonality : actif';
+  say('');
+  notify();
+};
+$('stop').onclick = () => ENG.stop();
+$('back').onclick = () => { try { window.opener && window.opener.focus(); } catch (e) { } };
+setInterval(() => { $('level').style.width = Math.min(100, Math.round(Math.sqrt(ENG.level) * 260)) + '%'; }, 200);
+window.addEventListener('pagehide', () => { if (ENG.state === 'active') { ENG.state = 'idle'; notify('La fenêtre du moteur audio a été fermée : le son transposé est arrêté.'); } });
+try { window.opener && window.opener.__tonalityEngineReady && window.opener.__tonalityEngineReady(window); } catch (e) { }
+</script>
+</body>
+</html>

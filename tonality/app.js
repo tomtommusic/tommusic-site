@@ -1,4 +1,4 @@
-/* Tonality — interface : lecteur (fichier, YouTube dans une fenêtre « Lecteur », autre onglet), transposition en temps réel,
+/* Tonality — interface : lecteur (fichier, YouTube dans la page avec une fenêtre « Moteur audio », autre onglet), transposition en temps réel,
    tonalité et modulations, capo, boucle A-B, tempo, notes et librairie. */
 'use strict';
 const KE = window.TonalityKeys;
@@ -60,59 +60,32 @@ let OPENED = null;          // élément de librairie ouvert
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const canCapture = !isMobile && !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
 
-/* ================= Audio (AudioWorklet) ================= */
-let ctx = null, node = null, media = null, mediaSrc = null, CAP = null;
+/* ================= Audio ================= */
+// Fichier et « autre onglet » : le son est transposé dans cette page.
+// YouTube : la vidéo joue dans cette page, et une petite fenêtre « Moteur audio » capte cet onglet et fait sortir le son transposé.
+let ctx = null, eng = null, media = null, mediaSrc = null, CAP = null;
+let ENGINE = null;
+let NATURAL = (() => { try { return localStorage.getItem('tonality-voix') !== '0'; } catch (e) { return true; } })();
 async function ensureCtx() {
-  if (!ctx) {
-    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    await ctx.audioWorklet.addModule('shifter.js?v=2');
-  }
+  if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
   if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) { } }
   return ctx;
 }
-// Moteur principal : Signalsmith Stretch (WASM, licence MIT), avec correction des formants pour garder le timbre de la voix.
-// Si le navigateur ne peut pas le charger, on revient au moteur maison (shifter.js).
-let ENGINE = null, tap = null, tapSink = null;
-let NATURAL = (() => { try { return localStorage.getItem('tonality-voix') !== '0'; } catch (e) { return true; } })();
-async function newNode(record) {
-  if (node) { try { node.disconnect(); } catch (e) { } node = null; }
-  if (tap) { try { tap.disconnect(); } catch (e) { } tap = null; }
-  let n = null;
-  if (ENGINE !== 'maison' && typeof window.SignalsmithStretch === 'function') {
-    try {
-      n = await window.SignalsmithStretch(ctx, { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'speakers' });
-      ENGINE = 'signalsmith';
-    } catch (e) { console.warn('Tonality : Signalsmith Stretch indisponible, moteur maison utilisé', e); ENGINE = 'maison'; n = null; }
-  }
-  if (!n) {
-    ENGINE = 'maison';
-    n = new AudioWorkletNode(ctx, 'tonality-shifter', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { ratio: ratioNow() } });
-  }
-  node = n;
-  node.connect(ctx.destination);
-  if (ENGINE === 'signalsmith') node.start();
-  // écoute du son original (avant transposition) pour l'analyse de tonalité
-  if (record) {
-    tap = new AudioWorkletNode(ctx, 'tonality-tap', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
-    tap.port.onmessage = e => { if (e.data && e.data.chunk) onChunk(e.data.chunk); };
-    if (!tapSink) { tapSink = ctx.createGain(); tapSink.gain.value = 0; tapSink.connect(ctx.destination); }
-    tap.connect(tapSink);
-  }
-  applyRatio(); syncEngine();
-  return node;
+async function newEngine(record) {
+  if (eng) { eng.dispose(); eng = null; }
+  eng = await TonalityAudio.build(ctx, { params: params(), onChunk: record ? onChunk : null });
+  ENGINE = eng.kind; syncEngine();
+  return eng;
 }
-// branche une source sur le moteur (et sur l'écoute d'analyse s'il y en a une)
-function plug(src) { src.connect(node); if (tap) src.connect(tap); }
-const ratioNow = () => Math.pow(2, (ST * 100 + CT) / 1200);
+const params = () => ({ st: ST, ct: CT, natural: NATURAL });
 function applyRatio() {
-  if (!node) return;
-  if (ENGINE === 'signalsmith') node.schedule({ active: true, semitones: ST + CT / 100, formantCompensation: NATURAL && (ST !== 0 || CT !== 0), formantSemitones: 0, formantBaseHz: 0 });
-  else node.port.postMessage({ ratio: ratioNow() });
+  if (eng) eng.set(params());
+  if (CAP && CAP.engine && POP && !POP.closed && POP.ENG) { try { POP.ENG.set(params()); } catch (e) { } }
 }
 function syncEngine() {
   const cb = $('o-voice');
   cb.checked = NATURAL; cb.disabled = ENGINE === 'maison';
-  $('voice-note').textContent = ENGINE === 'maison' ? 'Ce navigateur utilise le moteur de secours : la correction de la voix n\'est pas offerte.' : 'Garde le timbre naturel de la voix quand tu transposes (moins d\'effet «\u00a0Chipmunks\u00a0»). Décoche-la pour comparer.';
+  $('voice-note').textContent = ENGINE === 'maison' ? 'Ce navigateur utilise le moteur de secours : la correction de la voix n\'est pas offerte.' : 'Garde le timbre naturel de la voix quand tu transposes (moins d\'effet « Chipmunks »). Décoche-la pour comparer.';
 }
 
 /* ================= Lecteur : fichier ================= */
@@ -121,11 +94,11 @@ function clearSource() {
   if (media) { try { media.pause(); URL.revokeObjectURL(media.src); } catch (e) { } }
   if (mediaSrc) { try { mediaSrc.disconnect(); } catch (e) { } }
   media = null; mediaSrc = null;
-  if (POP && !POP.closed && POP.TP && POP.TP.player && POP.TP.ready) { try { POP.TP.player.pauseVideo(); } catch (e) { } }
+  if (YTP) { try { YTP.destroy(); } catch (e) { } YTP = null; ytReady = false; }
   const box = $('player-box'); box.className = 'player';
   [...box.children].forEach(c => { if (c.id !== 'player-ph') c.remove(); });
   $('player-ph').hidden = false;
-  $('cap-box').hidden = true; $('reopen').hidden = true; $('transport').hidden = true; $('practice').hidden = true;
+  $('cap-box').hidden = true; $('transport').hidden = true; $('practice').hidden = true;
   setStatus($('src-status'), '');
   TR = null; ANA = null; SAVED = null; DUR = 0; LIVE = false; OVR = []; CAPO = null; MAXT = -1; TABT = 0;
 }
@@ -173,7 +146,7 @@ function loadFile(file, keepSettings) {
 }
 async function connectMedia() {
   await ensureCtx();
-  if (!mediaSrc && media) { mediaSrc = ctx.createMediaElementSource(media); await newNode(false); plug(mediaSrc); }
+  if (!mediaSrc && media) { mediaSrc = ctx.createMediaElementSource(media); await newEngine(false); eng.plug(mediaSrc); }
 }
 async function analyzeFile(file) {
   const st = $('src-status');
@@ -206,8 +179,8 @@ async function analyzeFile(file) {
   }
 }
 
-/* ================= Lecteur : YouTube dans une fenêtre à part ================= */
-let POP = null, popWatch = null, ytHooked = null;
+/* ================= Lecteur : YouTube dans la page ================= */
+let YTP = null, ytReady = false, ytApi = null, POP = null;
 function ytId(u) {
   u = (u || '').trim();
   if (/^[\w-]{11}$/.test(u)) return u;
@@ -221,63 +194,45 @@ function ytId(u) {
   } catch (e) { }
   return null;
 }
-const YT = () => (POP && !POP.closed && POP.TP && POP.TP.ready) ? POP.TP.player : null;
-function openPlayer(id) {
-  // doit être appelée directement dans un clic (sinon la fenêtre est bloquée)
-  if (POP && !POP.closed && POP.TP && POP.TP.api) { POP.TP.load(id); try { POP.focus(); } catch (e) { } }
-  else {
-    const w = 640, h = 420, left = Math.max(0, (window.screenX || 0) + (window.outerWidth || 1200) - w - 30), top = (window.screenY || 0) + 90;
-    POP = window.open('lecteur.html#' + id, 'tonality-lecteur', `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
-  }
-  ytHooked = null;
-  if (!POP) {
-    setStatus($('src-status'), 'Ton navigateur a bloqué la fenêtre du lecteur.', 'err', 'Ouvrir le lecteur', () => { openPlayer(id); });
-    return false;
-  }
-  watchPlayer();
-  return true;
-}
-function watchPlayer() {
-  clearInterval(popWatch);
-  popWatch = setInterval(() => {
-    if (!SRC || SRC.type !== 'youtube') { clearInterval(popWatch); return; }
-    if (!POP || POP.closed) {
-      setPh('Le lecteur est fermé', 'Clique sur « Rouvrir le lecteur » pour continuer.');
-      if (CAP) deactivate(false, 'Le lecteur a été fermé : le son transposé est arrêté.');
-      return;
-    }
-    const tp = POP.TP;
-    if (!tp) return;
-    if (ytHooked !== tp) {
-      ytHooked = tp;
-      tp.onError = code => ytError(code);
-      tp.onState = () => updateTransport();
-    }
-    if (tp.error != null && !tp.errShown) { tp.errShown = true; ytError(tp.error); }
-    if (tp.ready && tp.id === SRC.id && !tp.seen) {
-      tp.seen = true;
-      try { const d = tp.player.getVideoData(); if (!SRC.fromLib) fillTitle(d.title, d.author); } catch (e) { }
-      setPh('La vidéo joue dans la fenêtre « Tonality · Lecteur »', CAP ? 'Le son passe par Tonality.' : 'Place-la à côté de cette page.');
-      applyTempo();
-    }
-    if (tp.ready) { const d = tp.player.getDuration(); if (d > 0 && Math.abs(d - DUR) > 0.5) { DUR = d; renderAll(); } }
-  }, 400);
+const ytp = () => (YTP && ytReady) ? YTP : null;
+function loadYTApi() {
+  if (ytApi) return ytApi;
+  ytApi = new Promise((res, rej) => {
+    if (window.YT && window.YT.Player) return res();
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (prev) try { prev(); } catch (e) { } res(); };
+    const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api';
+    sc.onerror = () => { ytApi = null; rej(new Error('api')); }; document.head.appendChild(sc);
+  });
+  return ytApi;
 }
 function loadYouTube(id, fromLib) {
   clearSource();
   SRC = { type: 'youtube', id, url: 'https://www.youtube.com/watch?v=' + id, fromLib: !!fromLib };
   const box = $('player-box');
-  const img = document.createElement('img'); img.className = 'thumb'; img.alt = ''; img.onerror = () => img.remove(); img.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`; box.prepend(img);
-  setPh('Ouverture du lecteur…', 'La vidéo joue dans une petite fenêtre à part, que Tonality pilote.');
-  $('reopen').hidden = false; $('transport').hidden = false; $('practice').hidden = false;
-  if (!canCapture) {
-    setStatus($('src-status'), isMobile ? 'Sur téléphone et tablette, le navigateur ne laisse pas une page transposer le son d\'une vidéo YouTube. Utilise Chrome ou Edge sur un ordinateur, ou ouvre un fichier audio (bouton « Ouvrir un fichier »).' : 'Ce navigateur ne permet pas de transposer une vidéo YouTube. Utilise Chrome ou Edge sur un ordinateur, ou ouvre un fichier audio.', 'err');
-    $('transport').hidden = true; $('practice').hidden = true; $('reopen').hidden = true;
-    setPh('Transposition YouTube impossible ici', 'Ouvre plutôt un fichier audio ou vidéo.');
-    return;
-  }
+  setPh('Chargement de la vidéo…', '');
+  const holder = document.createElement('div'); holder.id = 'yt'; box.appendChild(holder);
+  $('transport').hidden = false; $('practice').hidden = false;
   showCaptureBox('youtube');
-  openPlayer(id);
+  loadYTApi().then(() => {
+    if (!SRC || SRC.id !== id) return;
+    YTP = new YT.Player('yt', {
+      videoId: id, playerVars: { playsinline: 1, rel: 0, origin: location.origin },
+      events: {
+        onReady: () => {
+          ytReady = true; $('player-ph').hidden = true;
+          try { const d = YTP.getVideoData(); if (!SRC.fromLib) fillTitle(d.title, d.author); } catch (e) { }
+          const d = YTP.getDuration(); if (d > 0) DUR = d;
+          applyTempo(); renderAll();
+        },
+        onStateChange: () => { updateTransport(); const d = YTP && YTP.getDuration ? YTP.getDuration() : 0; if (d > 0 && Math.abs(d - DUR) > 0.5) { DUR = d; renderAll(); } },
+        onError: e => ytError(e.data)
+      }
+    });
+  }).catch(() => setStatus($('src-status'), 'YouTube ne répond pas. Vérifie ta connexion, puis réessaie.', 'err'));
+  if (!canCapture) {
+    setStatus($('src-status'), isMobile ? 'Sur téléphone et tablette, le navigateur ne laisse pas une page transposer le son d\'une vidéo YouTube : la vidéo joue à sa hauteur originale. Pour transposer, ouvre un fichier audio (bouton « Ouvrir un fichier »).' : 'Ce navigateur ne permet pas de transposer une vidéo YouTube : la vidéo joue à sa hauteur originale. Utilise Chrome ou Edge sur un ordinateur, ou ouvre un fichier audio.', 'err');
+  }
   syncControls(); renderAll();
 }
 function ytError(code) {
@@ -285,7 +240,6 @@ function ytError(code) {
   if (code === 101 || code === 150) {
     setStatus(st, 'Le propriétaire de cette vidéo empêche sa lecture ailleurs que sur YouTube.', 'err', 'L\'ouvrir sur YouTube et la transposer', () => {
       const id = SRC.id; window.open('https://www.youtube.com/watch?v=' + id, '_blank');
-      try { POP && POP.close(); } catch (e) { }
       useOtherTab(id);
     });
   } else setStatus(st, code === 100 ? 'Vidéo introuvable ou privée.' : code === 2 ? 'Ce lien YouTube ne semble pas valide.' : 'La vidéo ne peut pas être lue ici.', 'err');
@@ -301,16 +255,53 @@ function useOtherTab(fromId) {
 }
 function showCaptureBox(mode) {
   $('cap-box').hidden = false; $('live').hidden = true; $('activate').hidden = false; $('howto').hidden = false;
-  $('howto-tab').textContent = mode === 'youtube' ? '« Tonality · Lecteur »' : 'où joue ta chanson';
+  $('howto-yt').hidden = mode !== 'youtube'; $('howto-tab').hidden = mode === 'youtube';
   if (!canCapture) { $('activate').disabled = true; $('howto').hidden = true; }
   else $('activate').disabled = false;
 }
 
-/* ================= Capture de l'onglet (son transposé) ================= */
+/* ================= Son transposé ================= */
 let MAXT = -1, TABT = 0, LAT = 0.12, lastLevel = 0;
-async function activate() {
+function activate() {
   if (!SRC || (SRC.type !== 'youtube' && SRC.type !== 'tab')) return;
-  if (SRC.type === 'youtube' && (!POP || POP.closed)) { setStatus($('src-status'), 'Le lecteur est fermé. Rouvre-le d\'abord.', 'err', 'Rouvrir le lecteur', () => openPlayer(SRC.id)); return; }
+  if (SRC.type === 'youtube') return openEngine();
+  return captureOtherTab();
+}
+// YouTube : la fenêtre « Moteur audio » capte cet onglet (doit être ouverte directement dans le clic)
+function openEngine() {
+  const st = $('src-status');
+  if (POP && !POP.closed) { try { POP.focus(); } catch (e) { } }
+  else {
+    const w = 460, h = 330, left = Math.max(0, (window.screenX || 0) + (window.outerWidth || 1200) - w - 40), top = (window.screenY || 0) + 120;
+    POP = window.open('moteur.html', 'tonality-moteur', `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+  }
+  if (!POP) { setStatus(st, 'Ton navigateur a bloqué la petite fenêtre « Moteur audio ». Autorise les fenêtres surgissantes pour tommusic.ca, puis réessaie.', 'err'); return; }
+  setStatus(st, 'Dans la petite fenêtre « Moteur audio », clique sur « Choisir l\'onglet Tonality ».');
+  hookEngine();
+}
+window.__tonalityEngineReady = () => hookEngine();
+function hookEngine() {
+  if (!POP || POP.closed || !POP.ENG) return;
+  const E = POP.ENG;
+  E.set(params());
+  E.onChunk = (chunk, sr) => onChunk(chunk, sr);
+  E.onState = (state, msg, kind) => {
+    if (state === 'active') engineOn(kind);
+    else if (CAP && CAP.engine) deactivate(false, msg || 'Son transposé arrêté.');
+  };
+  if (E.state === 'active' && !(CAP && CAP.engine)) engineOn(E.kind);
+}
+function engineOn(kind) {
+  CAP = { engine: true, sr: 0 };
+  ENGINE = kind; syncEngine();
+  LIVE = true;
+  $('activate').hidden = true; $('howto').hidden = true; $('live').hidden = false;
+  setStatus($('src-status'), 'Son transposé actif. Fais jouer la vidéo : la tonalité apparaît pendant l\'écoute. La petite fenêtre « Moteur audio » peut rester derrière, mais ne la ferme pas.', 'ok');
+  const p = ytp(); if (p) { try { if (p.getPlayerState() !== 1) p.playVideo(); } catch (e) { } }
+  renderAll();
+}
+// Autre onglet : cette page capte l'autre onglet et fait sortir le son transposé
+async function captureOtherTab() {
   const st = $('src-status');
   setStatus(st, 'Choisis l\'onglet à partager dans la fenêtre qui vient de s\'ouvrir…');
   let stream, controller = null;
@@ -323,57 +314,50 @@ async function activate() {
     };
     if (controller) o.controller = controller;
     stream = await navigator.mediaDevices.getDisplayMedia(o);
-    try { controller && controller.setFocusBehavior(SRC.type === 'youtube' ? 'no-focus-change' : 'focus-captured-surface'); } catch (e) { }
+    try { controller && controller.setFocusBehavior('focus-captured-surface'); } catch (e) { }
   } catch (e) {
     console.warn('Tonality : partage refusé ou impossible', e && e.name);
     setStatus(st, e && e.name === 'NotAllowedError' ? 'Partage annulé. Clique de nouveau sur « Activer le son transposé » quand tu es prêt.' : 'Impossible de capter le son dans ce navigateur. Essaie Chrome ou Edge sur un ordinateur.', 'err');
     return;
   }
   const at = stream.getAudioTracks()[0];
-  if (!at) {
-    stream.getTracks().forEach(t => t.stop());
-    setStatus(st, 'Aucun son n\'a été partagé. Recommence et garde « Partager aussi l\'audio de l\'onglet » coché.', 'err');
-    return;
-  }
-  try { await ensureCtx(); } catch (e) { stream.getTracks().forEach(t => t.stop()); setStatus(st, 'Le moteur audio n\'a pas pu démarrer. Recharge la page.', 'err'); return; }
+  if (!at) { stream.getTracks().forEach(t => t.stop()); setStatus(st, 'Aucun son n\'a été partagé. Recommence et garde « Partager aussi l\'audio de l\'onglet » coché.', 'err'); return; }
+  try { await ensureCtx(); await newEngine(true); } catch (e) { stream.getTracks().forEach(t => t.stop()); setStatus(st, 'Le moteur audio n\'a pas pu démarrer. Recharge la page.', 'err'); return; }
   const src = ctx.createMediaStreamSource(new MediaStream([at]));
-  await newNode(true); plug(src);
+  eng.plug(src);
   CAP = { stream, src };
   at.addEventListener('ended', () => { if (CAP && CAP.stream === stream) deactivate(false, 'Le partage s\'est arrêté. Clique sur « Activer le son transposé » pour reprendre.'); });
-  if (!TR || TR.sr !== ctx.sampleRate) { TR = new KE.Tracker(ctx.sampleRate); MAXT = -1; TABT = 0; }
   LIVE = true;
   $('activate').hidden = true; $('howto').hidden = true; $('live').hidden = false;
-  if (SRC.type === 'youtube') {
-    try { POP.TP.setBanner('Son envoyé à Tonality (transposé)', true); } catch (e) { }
-    setPh('La vidéo joue dans la fenêtre « Tonality · Lecteur »', 'Le son passe par Tonality.');
-    setStatus(st, 'Son transposé actif. Fais jouer la vidéo : la tonalité apparaît pendant l\'écoute.', 'ok');
-    const p = YT(); if (p) { try { if (p.getPlayerState() !== 1) p.playVideo(); } catch (e) { } }
-  } else setStatus(st, 'Son transposé actif. Fais jouer la chanson dans l\'autre onglet : la tonalité apparaît pendant l\'écoute.', 'ok');
+  setStatus(st, 'Son transposé actif. Fais jouer la chanson dans l\'autre onglet : la tonalité apparaît pendant l\'écoute.', 'ok');
   renderAll();
 }
 function deactivate(silent, msg) {
   if (!CAP) return;
   const c = CAP; CAP = null;
-  try { c.src.disconnect(); } catch (e) { }
-  c.stream.getTracks().forEach(t => t.stop());
-  if (node) { try { node.disconnect(); } catch (e) { } node = null; }
-  if (tap) { try { tap.disconnect(); } catch (e) { } tap = null; }
-  try { POP && !POP.closed && POP.TP && POP.TP.setBanner('Garde cette fenêtre ouverte.', false); } catch (e) { }
+  if (c.engine) {
+    if (POP && !POP.closed && POP.ENG) { try { POP.ENG.onState = null; POP.ENG.stop(); } catch (e) { } try { POP.close(); } catch (e) { } }
+    POP = null;
+  } else {
+    try { c.src.disconnect(); } catch (e) { }
+    c.stream.getTracks().forEach(t => t.stop());
+    if (eng) { eng.dispose(); eng = null; }
+  }
   if (!silent) {
     $('live').hidden = true; $('activate').hidden = false; $('howto').hidden = false;
-    setStatus($('src-status'), msg || 'Son transposé arrêté. La vidéo joue maintenant à sa hauteur originale.');
-    if (SRC && SRC.type === 'youtube') setPh('La vidéo joue dans la fenêtre « Tonality · Lecteur »', 'Son original (non transposé).');
+    setStatus($('src-status'), msg || (SRC && SRC.type === 'youtube' ? 'Son transposé arrêté. La vidéo joue maintenant à sa hauteur originale.' : 'Son transposé arrêté.'));
   }
   if (TR) { ANA = TR.analyze() || ANA; LIVE = false; }
   renderAll();
 }
-function onChunk(chunk) {
+function onChunk(chunk, sr) {
   let e = 0; for (let i = 0; i < chunk.length; i += 4) e += chunk[i] * chunk[i];
   lastLevel = Math.sqrt(e / (chunk.length / 4));
-  if (!TR || !CAP) return;
-  const sr = ctx.sampleRate, len = chunk.length / sr;
+  if (!CAP || !SRC) return;
+  if (!TR || TR.sr !== sr) { TR = new KE.Tracker(sr); MAXT = -1; TABT = 0; }
+  const len = chunk.length / sr;
   if (SRC.type === 'youtube') {
-    const p = YT(); if (!p) return;
+    const p = ytp(); if (!p) return;
     let state = -1, vt = 0, rate = 1;
     try { state = p.getPlayerState(); vt = p.getCurrentTime(); rate = p.getPlaybackRate() || 1; } catch (er) { return; }
     if (state !== 1) return;
@@ -386,6 +370,9 @@ function onChunk(chunk) {
     TR.push(chunk, TABT, 1); TABT += len;
   }
 }
+// fenêtre « Moteur audio » fermée par l'utilisateur
+setInterval(() => { if (CAP && CAP.engine && (!POP || POP.closed)) { POP = null; CAP.engine = true; deactivate(false, 'La fenêtre « Moteur audio » a été fermée : le son transposé est arrêté. Clique sur « Activer le son transposé » pour reprendre.'); } }, 700);
+window.addEventListener('pagehide', () => { try { POP && !POP.closed && POP.close(); } catch (e) { } });
 // analyse en direct, toutes les 3 secondes
 let lastFrames = 0;
 setInterval(() => {
@@ -399,33 +386,33 @@ setInterval(() => {
 const P = {
   time() {
     if (SRC && SRC.type === 'file' && media) return media.currentTime;
-    const p = YT(); if (SRC && SRC.type === 'youtube' && p) { try { return p.getCurrentTime(); } catch (e) { } }
+    const p = ytp(); if (SRC && SRC.type === 'youtube' && p) { try { return p.getCurrentTime(); } catch (e) { } }
     if (SRC && SRC.type === 'tab' && TR) return TABT;
     return null;
   },
   dur() { return DUR || (ANA ? ANA.end : 0); },
   playing() {
     if (SRC && SRC.type === 'file' && media) return !media.paused;
-    const p = YT(); if (p) { try { return p.getPlayerState() === 1; } catch (e) { } }
+    const p = ytp(); if (p) { try { return p.getPlayerState() === 1; } catch (e) { } }
     return false;
   },
   async play() {
     if (SRC && SRC.type === 'file' && media) { await connectMedia(); media.playbackRate = TEMPO; return media.play().catch(() => { }); }
-    const p = YT(); if (p) p.playVideo();
+    const p = ytp(); if (p) p.playVideo();
   },
-  pause() { if (SRC && SRC.type === 'file' && media) media.pause(); else { const p = YT(); if (p) p.pauseVideo(); } },
+  pause() { if (SRC && SRC.type === 'file' && media) media.pause(); else { const p = ytp(); if (p) p.pauseVideo(); } },
   seek(t) {
     t = Math.max(0, t);
     if (SRC && SRC.type === 'file' && media) { media.currentTime = t; return true; }
-    const p = YT(); if (p) { p.seekTo(t, true); return true; }
+    const p = ytp(); if (p) { p.seekTo(t, true); return true; }
     return false;
   },
-  canSeek() { return !!(SRC && ((SRC.type === 'file' && media) || (SRC.type === 'youtube' && YT()))); }
+  canSeek() { return !!(SRC && ((SRC.type === 'file' && media) || (SRC.type === 'youtube' && ytp()))); }
 };
 function togglePlay() { if (P.playing()) P.pause(); else P.play(); setTimeout(updateTransport, 120); }
 function applyTempo() {
   if (SRC && SRC.type === 'file' && media) { media.playbackRate = TEMPO; $('tempo-note').textContent = 'Le tempo change sans changer la hauteur.'; }
-  const p = YT();
+  const p = ytp();
   if (SRC && SRC.type === 'youtube' && p) {
     try {
       const av = p.getAvailablePlaybackRates() || [1];
@@ -812,7 +799,6 @@ const drop = $('url-form');
 ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('over'); } }));
 ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('over')));
 drop.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { e.preventDefault(); if (confirmLeave()) loadFile(e.dataTransfer.files[0]); } });
-$('reopen').onclick = () => { if (SRC && SRC.type === 'youtube') openPlayer(SRC.id); };
 $('activate').onclick = activate;
 $('deactivate').onclick = () => deactivate(false);
 $('play').onclick = togglePlay;
@@ -874,6 +860,7 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('beforeunload', e => { if (DIRTY || CAP) { e.preventDefault(); e.returnValue = ''; } });
 
+if (!canCapture) $('other-tab').hidden = true;
 syncEngine();
 renderAll();
 go(location.hash === '#librairie' ? 'librairie' : 'ecouter', false);

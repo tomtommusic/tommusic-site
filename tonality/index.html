@@ -100,7 +100,7 @@ textarea{font-family:var(--read);font-weight:400;font-size:15px;line-height:1.5;
 
 /* Lecteur */
 .player{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#06261c;display:grid;place-items:center;color:#d6efe4;text-align:center}
-.player video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.player video,.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
 .player img.thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45}
 .player .ph{position:relative;padding:20px;display:grid;gap:6px;justify-items:center;font-size:14px;max-width:420px}
 .player .ph svg{width:38px;height:38px;opacity:.85}
@@ -303,7 +303,7 @@ a.tab{text-decoration:none}
         <!-- ===== Colonne gauche : source, lecture, boucle, tempo ===== -->
         <div class="col">
           <div class="card">
-            <div class="cardhead"><p class="label">Source</p><button class="btn small" type="button" id="reopen" hidden>Rouvrir le lecteur</button></div>
+            <div class="cardhead"><p class="label">Source</p></div>
             <div class="player" id="player-box">
               <div class="ph" id="player-ph">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>
@@ -314,8 +314,14 @@ a.tab{text-decoration:none}
 
             <div id="cap-box" hidden style="display:grid;gap:12px">
               <div class="howto" id="howto">
-                <strong>Pour entendre la transposition :</strong>
-                <ol><li>Clique sur <b>Activer le son transposé</b>.</li><li>Dans la fenêtre de Chrome, choisis l'onglet <b id="howto-tab">« Tonality · Lecteur »</b>.</li><li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché, puis clique sur <b>Partager</b>.</li></ol>
+                <div id="howto-yt">
+                  <strong>Pour entendre la transposition :</strong>
+                  <ol><li>Clique sur <b>Activer le son transposé</b> : une petite fenêtre « Moteur audio » s'ouvre.</li><li>Dans cette fenêtre, clique sur <b>Choisir l'onglet Tonality</b>, puis choisis l'onglet <b>« Tonality »</b>.</li><li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché, puis clique sur <b>Partager</b>. Tu reviens ici automatiquement; la petite fenêtre peut rester derrière.</li></ol>
+                </div>
+                <div id="howto-tab" hidden>
+                  <strong>Pour entendre la transposition :</strong>
+                  <ol><li>Clique sur <b>Activer le son transposé</b>.</li><li>Dans la fenêtre de Chrome, choisis l'onglet <b>où joue ta chanson</b>.</li><li>Garde <b>« Partager aussi l'audio de l'onglet »</b> coché, puis clique sur <b>Partager</b>.</li></ol>
+                </div>
               </div>
               <div class="toolbar">
                 <button class="btn primary big" type="button" id="activate">
@@ -494,7 +500,8 @@ a.tab{text-decoration:none}
 </div>
 
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
+<script src="audio-engine.js?v=3"></script>
 <script src="keys.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
