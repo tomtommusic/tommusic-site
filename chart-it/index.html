@@ -39,6 +39,7 @@ img{max-width:100%}
   -webkit-mask:radial-gradient(circle, #000 0 60%, transparent 72%);mask:radial-gradient(circle, #000 0 60%, transparent 72%)}
 .brand{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .brand svg{width:44px;height:44px}
+.brand .bico{width:52px;height:52px;border-radius:12px;box-shadow:0 3px 8px rgb(0 0 0/.25)}
 .brand .word{font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1.1}
 .brand .word b{color:var(--accent-hi);font-weight:800}
 nav{display:grid;gap:6px;position:relative;z-index:1}
@@ -239,7 +240,7 @@ a.tab{text-decoration:none}
     border-right:0;border-bottom:1px solid var(--line);z-index:5}
   .side::after{display:none}
   .brand{flex-direction:row;gap:8px}
-  .brand svg{width:28px;height:28px}
+  .brand svg{width:28px;height:28px}.brand .bico{width:32px;height:32px;border-radius:8px}
   .brand .word{font-size:15px}
   nav{display:flex;margin-left:auto;gap:4px}
   .tab{padding:8px 10px;font-size:14px;gap:6px}
@@ -289,10 +290,7 @@ a.tab{text-decoration:none}
 <div class="app">
   <aside class="side">
     <div class="brand">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a9ac7"/><stop offset="1" stop-color="#075576"/></linearGradient></defs>
-        <rect x="4" y="8" width="40" height="32" rx="6" fill="url(#g)"/>
-        <path d="M14 14v20M24 14v20M34 14v20" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".9"/>
-        <path d="M7.5 24h33" stroke="#fff" stroke-width="1.6" opacity=".55"/></svg>
+      <img class="bico" src="../img/apps/chart-it.webp?v=2" alt="" width="52" height="52">
       <div class="word"><b>Chart</b> It</div>
     </div>
     <nav aria-label="Sections">

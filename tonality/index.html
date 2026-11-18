@@ -37,6 +37,7 @@ img{max-width:100%}
   -webkit-mask:radial-gradient(circle, #000 0 60%, transparent 72%);mask:radial-gradient(circle, #000 0 60%, transparent 72%)}
 .brand{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .brand svg{width:44px;height:44px}
+.brand .bico{width:52px;height:52px;border-radius:12px;box-shadow:0 3px 8px rgb(0 0 0/.25)}
 .brand .word{font-weight:800;font-size:19px;letter-spacing:-.01em;line-height:1.1}
 .brand .word b{color:var(--accent-hi);font-weight:800}
 nav{display:grid;gap:6px;position:relative;z-index:1}
@@ -235,7 +236,7 @@ a.tab{text-decoration:none}
     border-right:0;border-bottom:1px solid var(--line);z-index:5}
   .side::after{display:none}
   .brand{flex-direction:row;gap:8px}
-  .brand svg{width:28px;height:28px}
+  .brand svg{width:28px;height:28px}.brand .bico{width:32px;height:32px;border-radius:8px}
   .brand .word{font-size:15px}
   nav{display:flex;margin-left:auto;gap:4px}
   .tab{padding:8px 10px;font-size:14px;gap:6px}
@@ -292,10 +293,7 @@ body.qbar-on main{padding-bottom:110px}
 <div class="app">
   <aside class="side">
     <div class="brand">
-      <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#065f46"/></linearGradient></defs>
-        <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#g)"/>
-        <path d="M12 30l7-7 6 6 11-12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M30 17h6v6" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <img class="bico" src="../img/apps/tonality.webp?v=2" alt="" width="52" height="52">
       <div class="word"><b>Tona</b>lity</div>
     </div>
     <nav aria-label="Sections">
