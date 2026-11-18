@@ -34,9 +34,9 @@
 /* Layout: barre latérale fixe (logo + onglets + anneaux violets) et zone principale sombre; sur téléphone la barre devient un bandeau en haut.
    Style sombre assumé (une seule ambiance), contrastes élevés, aucune info portée par la couleur seule. */
 :root{
-  --bg:#f7f5fc; --side:#fbfaff; --panel:#ffffff; --panel-2:#efe8fd; --line:#e6e0f3; --line-hi:#d2c9ea;
-  --ink:#1d1b34; --muted:#585571; --accent:#7c3aed; --accent-hi:#6427d6; --accent-ink:#ffffff;
-  --ring:rgba(124,58,237,.18); --ring-2:rgba(124,58,237,.07); --hover:#6425d0; --danger:#b4232a; --shadow:rgba(76,45,140,.18);
+  --bg:#faf5ec; --side:#fdf9f2; --panel:#ffffff; --panel-2:#f5e7dc; --line:#ecdccb; --line-hi:#dcc3ab;
+  --ink:#2b1915; --muted:#6a5048; --accent:#8b1e2d; --accent-hi:#701623; --accent-ink:#ffffff;
+  --ring:rgba(139,30,45,.16); --ring-2:rgba(139,30,45,.06); --hover:#6a1420; --danger:#b4232a; --shadow:rgba(90,40,30,.18);
   --paper:#ffffff; --paper-ink:#111114; --paper-muted:#45454f;
   --ui:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
   --read:"Atkinson Hyperlegible",system-ui,sans-serif;
@@ -46,7 +46,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
-body{background:radial-gradient(900px 600px at 100% 0%, #ece4ff 0%, transparent 60%) fixed, var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
+body{background:radial-gradient(900px 600px at 100% 0%, #f3dfc9 0%, transparent 60%) fixed, var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--side)}
 
 .app{display:grid;grid-template-columns:210px 1fr;min-height:100%}
@@ -157,13 +157,13 @@ textarea{width:100%;min-height:380px;resize:vertical;font-family:var(--mono);fon
 @media (max-width:900px){ .grid{grid-template-columns:minmax(0,1fr)} }
 a.tab{text-decoration:none}
 /* Bande promo + pied de page */
-.promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#2a1a52,#4c1d95);color:#fff;border-radius:20px;padding:18px 22px}
+.promo{max-width:1180px;margin:40px auto 0;display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:linear-gradient(120deg,#3a0f17,#7a1a28);color:#fff;border-radius:20px;padding:18px 22px}
 .promo img{width:96px;height:96px;border-radius:12px;flex:none;box-shadow:0 10px 24px -12px rgba(0,0,0,.6)}
 .promo .pt{flex:1;min-width:200px}
-.promo .pk{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#d9ccff}
+.promo .pk{margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f1d6a6}
 .promo h2{margin:2px 0 0;font-size:22px;font-weight:800;letter-spacing:-.01em}
 .promo .pb{display:flex;gap:8px;flex-wrap:wrap}
-.promo .btn{background:#fff;color:#2a1a52;border-color:#fff;text-decoration:none}
+.promo .btn{background:#fff;color:#3a0f17;border-color:#fff;text-decoration:none}
 .promo .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}
 .foot{max-width:1180px;margin:24px auto 0;display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:13px;color:var(--muted)}
 .foot nav{display:flex;gap:16px;flex-wrap:wrap}
