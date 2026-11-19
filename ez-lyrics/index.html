@@ -199,6 +199,8 @@ a.tab{text-decoration:none}
   :root{--bg:#fff}
   body{background:#fff}
   .side,.head,.pill,.grid>.card:first-child,.fiche-top,#v-lib{display:none!important}
+  /* À l'impression, seulement la feuille : rien d'autre de la page (texte d'explication, pub, pied de page, bandeaux) */
+  main > :not(#v-conv), body > :not(.app){display:none!important}
   .app,.grid{display:block}
   main{padding:0}
   .card{border:0;padding:0;background:#fff}
