@@ -2,6 +2,7 @@
 <html lang="fr-CA">
 <head>
 <meta charset="utf-8">
+<script src="../i18n-head.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Tonality : écoute une vidéo YouTube ou un fichier audio, transpose-la en temps réel et découvre sa tonalité et ses modulations. Par Tom Tom Music.">
 <link rel="icon" href="../img/apps/tonality-32.png?v=2">
@@ -271,7 +272,6 @@ body.qbar-on main{padding-bottom:110px}
 @media (max-width:430px){ .qbar.off .q0{display:none} .qbar.off .qp{display:none} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-<link rel="canonical" href="https://tommusic.ca/tonality/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
 <meta property="og:site_name" content="Tom Tom Music">
@@ -288,6 +288,9 @@ body.qbar-on main{padding-bottom:110px}
 .seo .seo-n{color:var(--muted);font-size:.92em}
 .seo a{color:var(--accent);font-weight:600}
 </style>
+<link rel="alternate" hreflang="en" href="https://tommusic.ca/tonality/">
+<link rel="alternate" hreflang="fr" href="https://tommusic.ca/tonality/?lang=fr">
+<link rel="alternate" hreflang="x-default" href="https://tommusic.ca/tonality/">
 </head>
 <body>
 <div class="app">
@@ -545,6 +548,8 @@ body.qbar-on main{padding-bottom:110px}
   </main>
 </div>
 
+<script src="en.js?v=1"></script>
+<script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
 <div class="qbar" id="qbar" role="group" aria-label="Transposition rapide" hidden>
