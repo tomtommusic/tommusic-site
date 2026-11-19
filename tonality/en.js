@@ -19,7 +19,7 @@ metaFr:{title:"Tonality · Transposer une chanson YouTube en temps réel | Tom T
   desc:"Transpose une chanson YouTube ou un fichier audio en temps réel, sans changer le tempo, et découvre sa tonalité et ses modulations."},
 before:function(){var s=document.getElementById('o-lang');var saved=null;try{saved=localStorage.getItem('tonality-lang')}catch(e){}if(s&&!saved)s.value='en';},
 t:{
-"Sections":"Sections","Écouter":"Listen","Librairie":"Library",
+"Sections":"Sections","Écouter":"Listen","Écouter une chanson":"Listen to a song","Librairie":"Library",
 "Transposer une chanson":"Transpose a song","en temps réel":"in real time",
 "Colle un lien YouTube ou ouvre un fichier audio ou vidéo. Monte ou descends la chanson d'autant de demi-tons que tu veux, sans changer le tempo. Tonality te donne aussi la tonalité de départ et les modulations.":"Paste a YouTube link or open an audio or video file. Raise or lower the song by as many semitones as you like, without changing the tempo. Tonality also tells you the starting key and the key changes.",
 "Colle un lien YouTube…":"Paste a YouTube link…","Lien YouTube":"YouTube link","Charger la vidéo":"Load the video","ou":"or",
