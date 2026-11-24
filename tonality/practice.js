@@ -32,6 +32,9 @@ let RUN = null;     // analyse complète en cours : {kind:'file'|'yt', prev:{tem
 let REF = null;     // choix déjà faits (vitesse des temps, « 1 », mesure) que les analyses suivantes doivent garder
 const LV = { seg: -1, segs: new Map(), pend: [], pendLen: 0, sr: 0, lastEnd: null, newSec: 0, total: 0 };
 const COV = [];     // portions de la chanson déjà entendues par l'analyse [[a, b], …]
+// téléchargement du modèle (une seule fois) : progression
+let DLP = null;
+const onDl = p => { DLP = p; PR.sync(); };
 function mlClient() { if (!MLC) MLC = BeatML.create(); return MLC; }
 function lvReset() { LV.seg = -1; LV.segs.clear(); LV.pend = []; LV.pendLen = 0; LV.sr = 0; LV.lastEnd = null; LV.newSec = 0; LV.total = 0; COV.length = 0; }
 function covAdd(a, b) {
@@ -47,7 +50,7 @@ PR.mlFile = async (mono, sr, dur) => {
   if (!ML_OK || MLLOCK) return;
   const token = ++MLTOKEN; MLSTATE = 'loading'; MLPROG = 0; RUN = { kind: 'file' }; PR.sync();
   try {
-    const cl = mlClient(); await cl.load(); if (token !== MLTOKEN) return;
+    const cl = mlClient(); await cl.load(onDl); DLP = null; if (token !== MLTOKEN) return;
     MLSTATE = 'running'; PR.sync();
     const r = await BeatML.analyzeBuffer(cl, mono, sr, p => { if (token === MLTOKEN) { MLPROG = p; PR.sync(); } });
     if (token !== MLTOKEN) return;
@@ -85,7 +88,7 @@ function audioToMedia(sg, x) { let p = sg.pieces[0]; for (const q of sg.pieces) 
 async function mlRun(final) {
   const token = MLTOKEN;
   if (!MLA) { MLSTATE = 'loading'; PR.sync(); }
-  await mlClient().load(); if (token !== MLTOKEN) return null;
+  await mlClient().load(onDl); DLP = null; if (token !== MLTOKEN) return null;
   if (!MLA) { MLSTATE = 'running'; PR.sync(); }
   mlFlush();
   const res = await mlClient().analyze(final ? { final: true } : {});
@@ -239,6 +242,11 @@ function grid() {
     let best = 0; for (const [n, c] of Object.entries(cnt)) if (c > best || (c === best && +n === 4)) { best = c; autoMeter = +n; }
     if (REF && !raw.done && REF.meter !== autoMeter && (cnt[REF.meter] || 0) >= best * 0.6) autoMeter = REF.meter;
   } else if (MANUAL) autoMeter = (REF && REF.meter) || 4;
+  // 6 temps très rapides = des croches : on revient à 3 temps au tempo de la noire (valse)
+  if (!MANUAL && autoMeter === 6 && p < 60 / 130 && downIdx.length >= 2) {
+    const par = ((downIdx[0] % 2) + 2) % 2;
+    beats = beats.filter((_, i) => i % 2 === par); downIdx = downIdx.filter(i => i % 2 === par).map(i => (i - par) / 2); autoMeter = 3; p *= 2;
+  }
   const meter0 = autoMeter;
   // « 1 » : vote sur toute la chanson. On ne change de place qu'après au moins 6 mesures de suite qui le demandent.
   const phases = [];
@@ -692,10 +700,11 @@ PR.sync = () => {
     if (RUN && RUN.kind === 'yt') {
       pct = dur ? Math.min(1, covered() / dur) : 0; const left = dur ? dur * (1 - pct) : 0;
       ptxt = `Analyse… ${Math.round(pct * 100)} %`;
+      if (DLP != null && DLP < 1) { ptxt += ` · téléchargement ${Math.round(DLP * 100)} %`; }
       note = RUN.finishing ? 'Dernière vérification…' : !CAP ? 'Le son transposé n\'est pas activé : l\'analyse n\'entend rien. Clique sur « Activer le son transposé ».' : `La chanson joue du début à la fin à vitesse normale. Encore environ ${fmtMs(left)}.`;
     } else {
-      pct = MLSTATE === 'loading' ? 0.02 : MLPROG; ptxt = `Analyse… ${Math.round(pct * 100)} %`;
-      note = MLSTATE === 'loading' ? 'Chargement de l\'analyse des temps (une seule fois)…' : 'Analyse des temps et des mesures du fichier.';
+      if (DLP != null && DLP < 1) { pct = DLP; ptxt = `Téléchargement… ${Math.round(pct * 100)} %`; note = 'Téléchargement de l\'analyse des temps (75 Mo, une seule fois par appareil).'; }
+      else { pct = MLSTATE === 'loading' ? 0.02 : MLPROG; ptxt = `Analyse… ${Math.round(pct * 100)} %`; note = MLSTATE === 'loading' ? 'Préparation de l\'analyse des temps…' : 'Analyse des temps et des mesures du fichier.'; }
     }
   } else if (mode === 'idle') {
     pct = dur ? Math.min(1, covered() / dur) : 0; ptxt = `Écouté : ${Math.round(pct * 100)} %`;

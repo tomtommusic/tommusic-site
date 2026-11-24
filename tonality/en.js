@@ -155,7 +155,7 @@ t:{
 "Décalage":"Offset",
 "Si les clics arrivent un peu avant ou après les temps de la chanson, déplace le décalage (négatif = plus tôt).":"If clicks land slightly before or after the song's beats, move the offset (negative = earlier).",
 "Dernière vérification…":"Final check…",
-"Chargement de l'analyse des temps (une seule fois)…":"Loading the beat analysis (only once)…",
+"Chargement de l'analyse des temps (une seule fois)…":"Loading the beat analysis (only once)…","Téléchargement de l'analyse des temps (75 Mo, une seule fois par appareil).":"Downloading the beat analysis (75 MB, once per device).","Préparation de l'analyse des temps…":"Preparing the beat analysis…",
 "Analyse des temps et des mesures du fichier.":"Analyzing the file's beats and bars.",
 "Active le son dans la petite fenêtre « Moteur audio » : l'analyse commencera ensuite.":"Turn on the sound in the small “Audio engine” window: the analysis will start then.",
 "Tempo provisoire : il se précise pendant l'écoute. Clique sur « Garder ce tempo » quand il te convient.":"Provisional tempo: it gets more precise as you listen. Click “Keep this tempo” when it fits.",
@@ -177,6 +177,7 @@ t:{
 "Pour aimanter la boucle aux temps, il faut le tempo : fais jouer la chanson quelques secondes (ou tape le tempo).":"To snap the loop to the beats, Tonality needs the tempo: play the song for a few seconds (or tap the tempo)."
 },
 re:[
+[/^Téléchargement… (\d+) %$/,'Downloading… $1%'],[/^Analyse… (\d+) % · téléchargement (\d+) %$/,'Analyzing… $1% · downloading $2%'],
 [/^correction actuelle : ([+−])(\d+) ms$/,'current correction: $1$2 ms'],
 [/^Analyse… (\d+) %$/,'Analyzing… $1%'],[/^Écouté : (\d+) %$/,'Heard: $1%'],[/^(\d+) temps par mesure$/,'$1 beats per bar'],
 [/^Tempo analysé et verrouillé · (\d+) BPM · (\d+) temps$/,'Tempo analyzed and locked · $1 BPM · $2 beats'],[/^Tempo tapé · (\S+) BPM$/,'Tapped tempo · $1 BPM'],

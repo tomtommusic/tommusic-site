@@ -1,5 +1,5 @@
 /* Tonality — fil de calcul (Web Worker) pour Beat This! (temps et premiers temps par réseau de neurones).
-   Beat This! : Foscarin, Schlüter, Widmer, ISMIR 2024, JKU Linz, licence MIT. Petit modèle quantifié 8 bits (kawaii-audio-visualizer, MIT).
+   Beat This! : Foscarin, Schlüter, Widmer, ISMIR 2024, JKU Linz, licence MIT. Grand modèle final0 (ONNX, ReaBeat, MIT); petit modèle quantifié 8 bits en secours (kawaii-audio-visualizer, MIT).
    Le calcul se fait ici pour que la page (et le métronome) ne gèle jamais.
    Fonctionne en continu : l'audio arrive par morceaux (« segments » continus de la chanson); les tranches de 30 s
    déjà complètes sont gardées, seule la fin est recalculée. */
@@ -7,13 +7,26 @@
 const SR = 22050, NFFT = 1024, HOP = 441, MELS = 128, FPS = SR / HOP, BINS = NFFT / 2 + 1, CHUNK = 1500, BORDER = 6, STRIDE = CHUNK - 2 * BORDER;
 let M = null, loadP = null;
 
-async function fetchBin(url) {
-  const r = await fetch(url); if (!r.ok) throw new Error('fetch ' + url + ' ' + r.status);
-  const buf = await r.arrayBuffer(), b = new Uint8Array(buf);
+async function fetchBin(url, onProg, keep) {
+  // gros fichiers : gardés dans le cache du navigateur (téléchargés une seule fois)
+  let cache = null, r = null;
+  if (keep && self.caches) { try { cache = await caches.open('tonality-models-v1'); r = await cache.match(url); } catch (e) { cache = null; } }
+  const cached = !!r;
+  if (!r) r = await fetch(url);
+  if (!r.ok) throw new Error('fetch ' + url + ' ' + r.status);
+  let buf;
+  const total = +r.headers.get('content-length') || 0;
+  if (onProg && !cached && total && r.body) {
+    const rd = r.body.getReader(), parts = []; let got = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; onProg(Math.min(1, got / total)); }
+    const all = new Uint8Array(got); let o = 0; for (const p of parts) { all.set(p, o); o += p.length; } buf = all.buffer;
+  } else buf = await r.arrayBuffer();
+  if (cache && !cached) { try { await cache.put(url, new Response(buf.slice(0), { headers: { 'content-type': 'application/octet-stream' } })); } catch (e) { } }
+  const b = new Uint8Array(buf);
   if (/\.gz(\?|$)/.test(url) && b[0] === 0x1f && b[1] === 0x8b) return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
   return buf;
 }
-function load(base) {
+function load(base, onProg) {
   if (loadP) return loadP;
   loadP = (async () => {
     importScripts(base + 'vendor/ort/ort.wasm.min.js?v=1.17.1');
@@ -21,8 +34,13 @@ function load(base) {
     const wasmUrl = URL.createObjectURL(new Blob([wasm], { type: 'application/wasm' }));
     ort.env.wasm.numThreads = 1; ort.env.wasm.simd = true; ort.env.wasm.proxy = false;
     ort.env.wasm.wasmPaths = { 'ort-wasm-simd.wasm': wasmUrl, 'ort-wasm.wasm': wasmUrl };
-    const [model, fb] = await Promise.all([fetchBin(base + 'vendor/beatthis/beatthis_small0_int8.onnx.gz'), fetchBin(base + 'vendor/beatthis/mel_fb.f32.gz')]);
-    const session = await ort.InferenceSession.create(new Uint8Array(model), { executionProviders: ['wasm'] });
+    // grand modèle (final0, ≈ 75 Mo, le plus précis); petit modèle en secours si le grand ne peut pas être chargé
+    const mq = /[?&]model=([^&]+)/.exec(self.location.search);
+    const BIG = mq ? decodeURIComponent(mq[1]) : base + 'vendor/beatthis/beatthis_final0.onnx.gz?v=1', SMALL = base + 'vendor/beatthis/beatthis_small0_int8.onnx.gz';
+    const fb = await fetchBin(base + 'vendor/beatthis/mel_fb.f32.gz');
+    let session = null;
+    try { const model = await fetchBin(BIG, onProg, true); session = await ort.InferenceSession.create(new Uint8Array(model), { executionProviders: ['wasm'] }); }
+    catch (e) { console.warn('Tonality : grand modèle indisponible, petit modèle utilisé', e); session = await ort.InferenceSession.create(new Uint8Array(await fetchBin(SMALL)), { executionProviders: ['wasm'] }); }
     const F = new Float32Array(fb), bands = [];
     for (let m = 0; m < MELS; m++) { let k0 = -1, k1 = -1; for (let k = 0; k < BINS; k++) if (F[k * MELS + m] !== 0) { if (k0 < 0) k0 = k; k1 = k; } const w = new Float32Array(Math.max(0, k1 - k0 + 1)); if (k0 >= 0) for (let k = k0; k <= k1; k++) w[k - k0] = F[k * MELS + m]; bands.push({ k0: Math.max(0, k0), w }); }
     M = { session, bands, inName: session.inputNames[0], outB: session.outputNames.includes('beat') ? 'beat' : session.outputNames[0], outD: session.outputNames.includes('downbeat') ? 'downbeat' : session.outputNames[1] };
@@ -150,11 +168,11 @@ onmessage = e => {
   const m = e.data;
   queue = queue.then(async () => {
     try {
-      if (m.type === 'load') { await load(m.base); postMessage({ id: m.id, ok: true }); return; }
+      if (m.type === 'load') { await load(m.base, p => postMessage({ id: m.id, progress: p, dl: true })); postMessage({ id: m.id, ok: true }); return; }
       if (m.type === 'reset') { segs.clear(); postMessage({ id: m.id, ok: true }); return; }
       if (m.type === 'append') { let s = segs.get(m.seg); if (!s) { s = newSeg(m.sr); segs.set(m.seg, s); } append(s, m.samples); postMessage({ id: m.id, ok: true }); return; }
       if (m.type === 'analyze') {
-        await load(m.base);
+        await load(m.base, p => postMessage({ id: m.id, progress: p, dl: true }));
         const out = {};
         for (const [k, s] of segs) {
           if (m.only != null && k !== m.only) continue;

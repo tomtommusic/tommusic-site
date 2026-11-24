@@ -25,6 +25,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Model file: "small0" checkpoint converted to ONNX (int8) by the
+Model files: "final0" checkpoint as ONNX (from the ReaBeat project, MIT,
+https://github.com/b451c/ReaBeat, release v2.0.0-model), and as a fallback the "small0"
+checkpoint converted to ONNX (int8) by the
 kawaii-audio-visualizer project (MIT, see LICENSE-kawaii-audio-visualizer.txt).
 Runtime: ONNX Runtime Web 1.17.1 (MIT, Microsoft, see ../ort/).
