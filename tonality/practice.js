@@ -152,7 +152,8 @@ PR.load = p => {
   const m = p.ml && p.ml.beats && p.ml.beats.length >= 8 ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0, done: !!p.ml.done } : null;
   MLLOCK = m && m.done ? m : null; if (m && !m.done && !MLA) MLA = m;
   SY.corr = 0; SY.hist.length = 0;
-  MANUAL = p.manual || null; MULT = p.mult || 1; METER = p.meter || null; ADJ = p.adj || 0; REF = null; changed(); PR.sync();
+  // plus de corrections manuelles : on se fie à l'analyse
+  MANUAL = null; MULT = 1; METER = null; ADJ = 0; REF = null; changed(); PR.sync();
 };
 function useDsp() { return !ML_OK || MLSTATE === 'error'; }
 function shownTempo() {
