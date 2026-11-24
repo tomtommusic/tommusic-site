@@ -275,9 +275,13 @@ body.qbar-on main{padding-bottom:110px}
 .stage .player{width:100%;max-width:880px;margin:0 auto}
 .stage .transport{max-width:880px;margin:0 auto;width:100%}
 .stage #cap-box{max-width:880px;margin:0 auto;width:100%}
-.top{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:20px;align-items:start}
-.top .col{display:grid;gap:20px;min-width:0}
-@media (max-width:1100px){ .top{grid-template-columns:minmax(0,1fr)} .top .stage .player{max-width:620px;margin:0 auto;width:100%} }
+.stage{justify-items:center}
+.stage > *{width:100%;max-width:620px}
+.stage > .cardhead{max-width:none}
+.stage .player{max-width:560px;justify-self:center}
+.sidecol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.sidecol #capo-card{grid-column:1 / -1}
+@media (max-width:980px){ .sidecol{grid-template-columns:minmax(0,1fr)} }
 .stage .howto{font-size:13px;padding:8px 12px}
 .stage .howto ol{margin:4px 0 0;padding-left:20px}
 .mrow{display:flex;align-items:center;justify-content:center;gap:10px 26px;flex-wrap:wrap}
@@ -414,7 +418,6 @@ body.qbar-on main{padding-bottom:110px}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Transposer un autre onglet</button>
       </div>
 
-      <div class="top">
       <div class="card stage">
             <div class="cardhead"><p class="label">Source</p></div>
             <div class="player" id="player-box">
@@ -459,62 +462,6 @@ body.qbar-on main{padding-bottom:110px}
               </div>
             </div>
           </div>
-        <div class="col sidecol">
-          <div class="card">
-            <div class="cardhead"><p class="label">Transposition</p>
-              <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
-            <div class="tp">
-              <button class="tpbtn" type="button" id="tp-down" aria-label="Descendre d'un demi-ton">−</button>
-              <div class="tpval"><div class="n" id="tp-n">0</div><div class="u" id="tp-u">demi-ton (tonalité originale)</div></div>
-              <button class="tpbtn" type="button" id="tp-up" aria-label="Monter d'un demi-ton">+</button>
-            </div>
-            <input class="tprange" type="range" id="tp-range" min="-12" max="12" step="1" value="0" aria-label="Transposition en demi-tons">
-            <div class="tpkeys" id="tp-keys"></div>
-            <div class="toolbar" style="justify-content:center">
-              <button class="btn small" type="button" id="tp-zero">Tonalité originale</button>
-              <label class="note" for="tp-target">Transposer vers</label>
-              <select class="sel" id="tp-target" aria-label="Tonalité voulue"></select>
-            </div>
-            <div class="opts"><label><input type="checkbox" id="o-voice" checked><span><b>Voix naturelle</b> (correction des formants)<br><span class="note" id="voice-note"></span></span></label></div>
-            <div class="warnline" id="tp-warn" hidden>Au-delà de 5 demi-tons, le son devient moins naturel (voix un peu métallique).</div>
-            <div class="note" id="tp-hint" hidden></div>
-            <details class="adv" id="adv">
-              <summary>Accordage fin</summary>
-              <div class="in">
-                <div class="tempo">
-                  <input type="range" id="cents" min="-50" max="50" step="1" value="0" aria-label="Accordage fin en cents">
-                  <span class="val" id="cents-val">0 cent</span>
-                </div>
-                <p class="note" id="tuning-note">Utile quand un enregistrement n'est pas accordé à La 440 : ton instrument sonnera juste avec la chanson.</p>
-                <div class="toolbar"><button class="btn small" type="button" id="tune-440" disabled>Ramener à La 440</button><button class="btn small" type="button" id="cents-zero">0 cent</button></div>
-              </div>
-            </details>
-          </div>
-
-          <div class="card" id="keys-card">
-            <div class="cardhead"><p class="label">Tonalité et modulations</p><span class="note" id="an-state"></span></div>
-            <div id="keys-empty" class="empty-k"><strong>Pas encore d'analyse</strong><span id="keys-empty-t">Ouvre un fichier, ou active le son transposé d'une vidéo : la tonalité apparaît pendant l'écoute.</span></div>
-            <div id="keys-body" hidden style="display:grid;gap:14px">
-              <div class="keybig">
-                <div class="kb"><div class="t">Tonalité de départ</div><div class="v" id="k-start">—</div><div class="s" id="k-start-s"></div></div>
-                <div class="kb hl"><div class="t" id="k-tr-t">Ce que tu entends</div><div class="v" id="k-tr">—</div><div class="s" id="k-tr-s"></div></div>
-              </div>
-              <div>
-                <div class="tl" id="tl" role="img" aria-label="Ligne du temps des tonalités"></div>
-                <div class="tlscale"><span id="tl-a">0:00</span><span id="tl-b"></span></div>
-              </div>
-              <ul class="mods" id="mods"></ul>
-              <p class="note" id="tuning-line"></p>
-            </div>
-          </div>
-
-          <div class="card" id="capo-card" hidden>
-            <div class="cardhead"><p class="label">Capo pour la guitare</p><span class="note" id="capo-for"></span></div>
-            <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
-            <p class="note" id="capo-note"></p>
-          </div>
-        </div>
-      </div>
 
       <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
       <div class="card" id="bars-card" hidden>
@@ -616,6 +563,62 @@ body.qbar-on main{padding-bottom:110px}
             </div>
           </details>
         </div>
+      </div>
+
+      <div class="sidecol">
+          <div class="card">
+            <div class="cardhead"><p class="label">Transposition</p>
+              <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
+            <div class="tp">
+              <button class="tpbtn" type="button" id="tp-down" aria-label="Descendre d'un demi-ton">−</button>
+              <div class="tpval"><div class="n" id="tp-n">0</div><div class="u" id="tp-u">demi-ton (tonalité originale)</div></div>
+              <button class="tpbtn" type="button" id="tp-up" aria-label="Monter d'un demi-ton">+</button>
+            </div>
+            <input class="tprange" type="range" id="tp-range" min="-12" max="12" step="1" value="0" aria-label="Transposition en demi-tons">
+            <div class="tpkeys" id="tp-keys"></div>
+            <div class="toolbar" style="justify-content:center">
+              <button class="btn small" type="button" id="tp-zero">Tonalité originale</button>
+              <label class="note" for="tp-target">Transposer vers</label>
+              <select class="sel" id="tp-target" aria-label="Tonalité voulue"></select>
+            </div>
+            <div class="opts"><label><input type="checkbox" id="o-voice" checked><span><b>Voix naturelle</b> (correction des formants)<br><span class="note" id="voice-note"></span></span></label></div>
+            <div class="warnline" id="tp-warn" hidden>Au-delà de 5 demi-tons, le son devient moins naturel (voix un peu métallique).</div>
+            <div class="note" id="tp-hint" hidden></div>
+            <details class="adv" id="adv">
+              <summary>Accordage fin</summary>
+              <div class="in">
+                <div class="tempo">
+                  <input type="range" id="cents" min="-50" max="50" step="1" value="0" aria-label="Accordage fin en cents">
+                  <span class="val" id="cents-val">0 cent</span>
+                </div>
+                <p class="note" id="tuning-note">Utile quand un enregistrement n'est pas accordé à La 440 : ton instrument sonnera juste avec la chanson.</p>
+                <div class="toolbar"><button class="btn small" type="button" id="tune-440" disabled>Ramener à La 440</button><button class="btn small" type="button" id="cents-zero">0 cent</button></div>
+              </div>
+            </details>
+          </div>
+
+          <div class="card" id="keys-card">
+            <div class="cardhead"><p class="label">Tonalité et modulations</p><span class="note" id="an-state"></span></div>
+            <div id="keys-empty" class="empty-k"><strong>Pas encore d'analyse</strong><span id="keys-empty-t">Ouvre un fichier, ou active le son transposé d'une vidéo : la tonalité apparaît pendant l'écoute.</span></div>
+            <div id="keys-body" hidden style="display:grid;gap:14px">
+              <div class="keybig">
+                <div class="kb"><div class="t">Tonalité de départ</div><div class="v" id="k-start">—</div><div class="s" id="k-start-s"></div></div>
+                <div class="kb hl"><div class="t" id="k-tr-t">Ce que tu entends</div><div class="v" id="k-tr">—</div><div class="s" id="k-tr-s"></div></div>
+              </div>
+              <div>
+                <div class="tl" id="tl" role="img" aria-label="Ligne du temps des tonalités"></div>
+                <div class="tlscale"><span id="tl-a">0:00</span><span id="tl-b"></span></div>
+              </div>
+              <ul class="mods" id="mods"></ul>
+              <p class="note" id="tuning-line"></p>
+            </div>
+          </div>
+
+          <div class="card" id="capo-card" hidden>
+            <div class="cardhead"><p class="label">Capo pour la guitare</p><span class="note" id="capo-for"></span></div>
+            <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
+            <p class="note" id="capo-note"></p>
+          </div>
       </div>
 
       <!-- ===== Fiche : titre, notes, enregistrement ===== -->
