@@ -387,6 +387,22 @@ input[type="range"]{accent-color:var(--teal)}
 details.adv{border-radius:16px;background:#fbfefc}
 .howto{border-radius:14px}
 .promo{border-radius:24px;background:linear-gradient(120deg,#0b4d3c,#14a383)}
+
+/* barre de source compacte et lecteur vide réduit */
+.srcbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.srcbar .pill{flex:1 1 440px;min-height:52px;padding:6px 6px 6px 18px}
+.srcbar .pill .round{width:40px;height:40px}
+.srcbar .alt{margin:0;flex:none}
+#v-ec{gap:18px}
+#v-ec .head{min-height:180px}
+.card.stage{gap:10px}
+.stage .player:not(.audio):has(> .ph:only-child){aspect-ratio:auto;min-height:0;background:#f4faf7;color:var(--muted);border:1.5px dashed #b9ddcd}
+.stage .player:not(.audio):has(> .ph:only-child) .ph{grid-auto-flow:column;align-items:center;gap:12px;padding:14px 16px;max-width:none;text-align:left;justify-items:start}
+.stage .player:not(.audio):has(> .ph:only-child) .ph svg{width:30px;height:30px;grid-row:span 2;color:var(--teal);opacity:1}
+.stage .player:not(.audio):has(> .ph:only-child) .ph strong{color:var(--ink);font-size:15px}
+.stage .player:not(.audio):has(> .ph:only-child) .ph span{font-size:13px}
+/* aucune chanson et aucun message : on cache la carte Source (la barre du haut suffit) */
+.card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]){display:none}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -464,6 +480,7 @@ details.adv{border-radius:16px;background:#fbfefc}
         </div>
       </div>
 
+      <div class="srcbar">
       <form class="pill" id="url-form">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
         <input class="search" id="url" type="url" inputmode="url" placeholder="Colle un lien YouTube…" aria-label="Lien YouTube" autocomplete="off">
@@ -476,6 +493,7 @@ details.adv{border-radius:16px;background:#fbfefc}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>Ouvrir un fichier</label>
         <button class="btn small" type="button" id="other-tab">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Transposer un autre onglet</button>
+      </div>
       </div>
 
       <div class="card stage">
