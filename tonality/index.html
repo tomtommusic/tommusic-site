@@ -424,7 +424,7 @@ details.adv{border-radius:16px;background:#fbfefc}
 .tpcol{grid-template-rows:auto 1fr}
 #fiche-card{justify-content:space-between}
 /* métronome intégré à la carte de boucle */
-.metro-sec{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.metro-sec{display:grid;gap:12px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:4px}
 .metro-sec h3{margin:0;font-size:15px}
 .metro-sec .cardhead h3{margin-right:auto}
 .metro-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
@@ -632,55 +632,6 @@ details.adv{border-radius:16px;background:#fbfefc}
       <div class="tools" id="practice" hidden>
         <div class="card" id="loop-card">
           <div class="cardhead"><p class="label">🔁 Boucle, vitesse et métronome</p><span class="note" id="loop-info"></span></div>
-          <div class="loop-body">
-            <div class="loop-ctrl">
-          <div class="sub speed">
-            <h3>Vitesse de la chanson</h3>
-            <div class="tempo">
-              <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
-              <span class="val" id="tempo-val">100 %</span>
-              <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
-            </div>
-            <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
-          </div>
-          <div class="ab">
-            <button class="btn small" type="button" id="set-a">Point A ici</button>
-            <span class="pt" id="pt-a" aria-label="Point A">A —</span>
-            <button class="ib" type="button" id="a-m" aria-label="Reculer le point A">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A">▶</button>
-          </div>
-          <div class="ab">
-            <button class="btn small" type="button" id="set-b">Point B ici</button>
-            <span class="pt" id="pt-b" aria-label="Point B">B —</span>
-            <button class="ib" type="button" id="b-m" aria-label="Reculer le point B">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B">▶</button>
-          </div>
-          <div class="row2">
-            <span class="lab">Aimanter à</span>
-            <div class="seg3" role="group" aria-label="Aimanter la boucle">
-              <button type="button" data-snap="off" aria-pressed="true">Non</button><button type="button" data-snap="beat" aria-pressed="false">Temps</button><button type="button" data-snap="bar" aria-pressed="false">Mesures</button>
-            </div>
-          </div>
-          <div class="row2">
-            <span class="lab">Boucle de</span>
-            <div class="seg3" role="group" aria-label="Boucle d'un nombre de mesures">
-              <button type="button" data-bars="1">1</button><button type="button" data-bars="2">2</button><button type="button" data-bars="4">4</button><button type="button" data-bars="8">8</button>
-            </div>
-            <span class="lab">mesures</span>
-          </div>
-          <p class="note" id="snap-note"></p>
-          <div class="toolbar">
-            <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
-            <button class="btn small" type="button" id="go-a">Aller au point A</button>
-            <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
-          </div>
-          <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
-            </div>
-            <div class="barsbox" id="bars-card" hidden>
-        <div class="cardhead"><h3>📏 Mesures</h3><span class="note" id="bars-info"></span></div>
-        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
-        <p class="empty-b" id="bars-empty"></p>
-        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
-      </div>
-          </div>
           <div class="metro-sec" id="metro-card">
             <div class="cardhead"><h3>🥁 Métronome</h3><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
             <div class="metro-body">
@@ -734,6 +685,55 @@ details.adv{border-radius:16px;background:#fbfefc}
           </details>
               </div>
             </div>
+          </div>
+          <div class="loop-body">
+            <div class="loop-ctrl">
+          <div class="sub speed">
+            <h3>Vitesse de la chanson</h3>
+            <div class="tempo">
+              <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
+              <span class="val" id="tempo-val">100 %</span>
+              <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
+            </div>
+            <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
+          </div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-a">Point A ici</button>
+            <span class="pt" id="pt-a" aria-label="Point A">A —</span>
+            <button class="ib" type="button" id="a-m" aria-label="Reculer le point A">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A">▶</button>
+          </div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-b">Point B ici</button>
+            <span class="pt" id="pt-b" aria-label="Point B">B —</span>
+            <button class="ib" type="button" id="b-m" aria-label="Reculer le point B">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B">▶</button>
+          </div>
+          <div class="row2">
+            <span class="lab">Aimanter à</span>
+            <div class="seg3" role="group" aria-label="Aimanter la boucle">
+              <button type="button" data-snap="off" aria-pressed="true">Non</button><button type="button" data-snap="beat" aria-pressed="false">Temps</button><button type="button" data-snap="bar" aria-pressed="false">Mesures</button>
+            </div>
+          </div>
+          <div class="row2">
+            <span class="lab">Boucle de</span>
+            <div class="seg3" role="group" aria-label="Boucle d'un nombre de mesures">
+              <button type="button" data-bars="1">1</button><button type="button" data-bars="2">2</button><button type="button" data-bars="4">4</button><button type="button" data-bars="8">8</button>
+            </div>
+            <span class="lab">mesures</span>
+          </div>
+          <p class="note" id="snap-note"></p>
+          <div class="toolbar">
+            <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
+            <button class="btn small" type="button" id="go-a">Aller au point A</button>
+            <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
+          </div>
+          <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
+            </div>
+            <div class="barsbox" id="bars-card" hidden>
+        <div class="cardhead"><h3>📏 Mesures</h3><span class="note" id="bars-info"></span></div>
+        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
+        <p class="empty-b" id="bars-empty"></p>
+        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
+      </div>
           </div>
         </div>
       </div>
