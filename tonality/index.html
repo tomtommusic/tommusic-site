@@ -395,17 +395,10 @@ details.adv{border-radius:16px;background:#fbfefc}
 #v-ec{gap:18px}
 #v-ec .head{min-height:180px}
 .card.stage{gap:10px}
-.stage .player:not(.audio):has(> .ph:only-child){aspect-ratio:auto;min-height:0;background:#f4faf7;color:var(--muted);border:1.5px dashed #b9ddcd}
-.stage .player:not(.audio):has(> .ph:only-child) .ph{grid-auto-flow:column;align-items:center;gap:12px;padding:14px 16px;max-width:none;text-align:left;justify-items:start}
-.stage .player:not(.audio):has(> .ph:only-child) .ph svg{width:30px;height:30px;grid-row:span 2;color:var(--teal);opacity:1}
-.stage .player:not(.audio):has(> .ph:only-child) .ph strong{color:var(--ink);font-size:15px}
-.stage .player:not(.audio):has(> .ph:only-child) .ph span{font-size:13px}
 /* aucune chanson et aucun message : on cache la carte Source (la barre du haut suffit) */
-.card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]){display:none}
 /* ordre : lecteur + transposition, puis boucle et mesures, puis le reste */
 .toprow{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:20px;align-items:start}
 .toprow .card.stage{max-width:none;width:auto;justify-self:stretch;align-content:start}
-.card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]) ~ #tp-card{grid-column:1 / -1}
 .stage .howto{font-size:12.5px;line-height:1.45}
 .stage #activate{padding:10px 18px;font-size:14.5px}
 .stage #src-status:empty{display:none}
@@ -418,7 +411,8 @@ details.adv{border-radius:16px;background:#fbfefc}
 .barsbox .bars{grid-template-columns:repeat(auto-fill,minmax(46px,1fr));max-height:300px}
 .rest{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
 .rest .col{display:grid;gap:20px;min-width:0}
-#practice[hidden] ~ .rest #metro-card,#practice[hidden] ~ .rest #fiche-card{display:none}
+#practice[hidden] ~ .rest #metro-card{display:none}
+.tpcol{display:grid;gap:20px;min-width:0}
 #fiche-card #status:empty{display:none}
 #fiche-card textarea{min-height:110px}
 @media (max-width:980px){ .loop-body,.rest{grid-template-columns:minmax(0,1fr)} .barsbox{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px} }
@@ -563,6 +557,7 @@ details.adv{border-radius:16px;background:#fbfefc}
               </div>
             </div>
           </div>
+        <div class="col tpcol">
           <div class="card" id="tp-card">
             <div class="cardhead"><p class="label">Transposition</p>
               <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
@@ -593,6 +588,28 @@ details.adv{border-radius:16px;background:#fbfefc}
               </div>
             </details>
           </div>
+      <!-- ===== Fiche : titre, notes, enregistrement ===== -->
+      <div class="card" id="fiche-card">
+        <p class="label">Fiche de la chanson</p>
+        <div class="fields">
+          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
+          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+        </div>
+        <div class="field notes-f">
+          <label for="notes">Notes personnelles</label>
+          <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
+        </div>
+        <div class="toolbar">
+          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
+          <div class="chips" id="stamps" aria-label="Moments notés"></div>
+          <span style="margin-left:auto"></span>
+          <button class="btn small primary" id="save" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
+        </div>
+        <div class="status" id="status" role="status"></div>
+        <p class="note">La librairie garde le lien, la transposition, le tempo, la boucle, la tonalité et tes notes. Le son, lui, n'est jamais enregistré.</p>
+      </div>
+        </div>
       </div>
 
       <!-- ===== Boucle, vitesse et mesures ===== -->
@@ -726,27 +743,6 @@ details.adv{border-radius:16px;background:#fbfefc}
             <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
             <p class="note" id="capo-note"></p>
           </div>
-      <!-- ===== Fiche : titre, notes, enregistrement ===== -->
-      <div class="card" id="fiche-card">
-        <p class="label">Fiche de la chanson</p>
-        <div class="fields">
-          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
-          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
-        </div>
-        <div class="field notes-f">
-          <label for="notes">Notes personnelles</label>
-          <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
-        </div>
-        <div class="toolbar">
-          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
-          <div class="chips" id="stamps" aria-label="Moments notés"></div>
-          <span style="margin-left:auto"></span>
-          <button class="btn small primary" id="save" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
-        </div>
-        <div class="status" id="status" role="status"></div>
-        <p class="note">La librairie garde le lien, la transposition, le tempo, la boucle, la tonalité et tes notes. Le son, lui, n'est jamais enregistré.</p>
-      </div>
         </div>
       </div>
 
