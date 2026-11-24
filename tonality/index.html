@@ -318,7 +318,6 @@ body.qbar-on main{padding-bottom:110px}
 .bars .bar .dots i.on{background:var(--ink);border-color:var(--ink)}
 .bars .bar .dots i.one.on{background:var(--accent-hi);border-color:var(--accent-hi)}
 .bars .bar:hover{border-color:var(--ink)}
-#bars-card{gap:8px;padding:14px 18px}
 #bars-card .note{margin:0}
 .empty-b{border:1px dashed var(--line-hi);border-radius:12px;padding:16px;text-align:center;color:var(--muted);margin:0;font-size:14px}
 .empty-b:empty{display:none}
@@ -403,19 +402,26 @@ details.adv{border-radius:16px;background:#fbfefc}
 .stage .player:not(.audio):has(> .ph:only-child) .ph span{font-size:13px}
 /* aucune chanson et aucun message : on cache la carte Source (la barre du haut suffit) */
 .card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]){display:none}
-/* rangée du haut : lecteur à gauche, fiche à droite */
-.toprow{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:20px;align-items:stretch}
+/* ordre : lecteur + transposition, puis boucle et mesures, puis le reste */
+.toprow{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:20px;align-items:start}
 .toprow .card.stage{max-width:none;width:auto;justify-self:stretch;align-content:start}
+.card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]) ~ #tp-card{grid-column:1 / -1}
 .stage .howto{font-size:12.5px;line-height:1.45}
 .stage #activate{padding:10px 18px;font-size:14.5px}
 .stage #src-status:empty{display:none}
-#fiche-card{display:flex;flex-direction:column;gap:12px}
-#fiche-card .notes-f{flex:1;display:flex;flex-direction:column;gap:4px}
-#fiche-card .notes-f textarea{flex:1;min-height:120px}
-#fiche-card .note{margin-top:-4px}
+.tools{grid-template-columns:minmax(0,1fr)}
+.loop-body{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:22px;align-items:start}
+.loop-ctrl{display:grid;gap:12px;align-content:start}
+.barsbox{display:grid;gap:8px;border-left:1px solid var(--line);padding-left:22px;min-width:0}
+.barsbox h3{margin:0;font-size:15px}
+.barsbox .note{margin:0}
+.barsbox .bars{grid-template-columns:repeat(auto-fill,minmax(46px,1fr));max-height:300px}
+.rest{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.rest .col{display:grid;gap:20px;min-width:0}
+#practice[hidden] ~ .rest #metro-card,#practice[hidden] ~ .rest #fiche-card{display:none}
 #fiche-card #status:empty{display:none}
-/* aucune chanson : la fiche se cache avec la carte Source */
-.card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]) ~ #fiche-card{display:none}
+#fiche-card textarea{min-height:110px}
+@media (max-width:980px){ .loop-body,.rest{grid-template-columns:minmax(0,1fr)} .barsbox{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px} }
 @media (max-width:900px){ .toprow{grid-template-columns:minmax(0,1fr)} }
 </style>
 <meta property="og:type" content="website">
@@ -510,6 +516,8 @@ details.adv{border-radius:16px;background:#fbfefc}
       </div>
       </div>
 
+      <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
+      <!-- ===== Lecteur et transposition ===== -->
       <div class="toprow">
       <div class="card stage">
             <div class="cardhead"><p class="label">Source</p></div>
@@ -555,41 +563,44 @@ details.adv{border-radius:16px;background:#fbfefc}
               </div>
             </div>
           </div>
-
-      <!-- ===== Fiche : titre, notes, enregistrement ===== -->
-      <div class="card" id="fiche-card">
-        <p class="label">Fiche de la chanson</p>
-        <div class="fields">
-          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
-          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
-        </div>
-        <div class="field notes-f">
-          <label for="notes">Notes personnelles</label>
-          <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
-        </div>
-        <div class="toolbar">
-          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
-          <div class="chips" id="stamps" aria-label="Moments notés"></div>
-          <span style="margin-left:auto"></span>
-          <button class="btn small primary" id="save" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
-        </div>
-        <div class="status" id="status" role="status"></div>
-        <p class="note">La librairie garde le lien, la transposition, le tempo, la boucle, la tonalité et tes notes. Le son, lui, n'est jamais enregistré.</p>
+          <div class="card" id="tp-card">
+            <div class="cardhead"><p class="label">Transposition</p>
+              <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
+            <div class="tp">
+              <button class="tpbtn" type="button" id="tp-down" aria-label="Descendre d'un demi-ton">−</button>
+              <div class="tpval"><div class="n" id="tp-n">0</div><div class="u" id="tp-u">demi-ton (tonalité originale)</div></div>
+              <button class="tpbtn" type="button" id="tp-up" aria-label="Monter d'un demi-ton">+</button>
+            </div>
+            <input class="tprange" type="range" id="tp-range" min="-12" max="12" step="1" value="0" aria-label="Transposition en demi-tons">
+            <div class="tpkeys" id="tp-keys"></div>
+            <div class="toolbar" style="justify-content:center">
+              <button class="btn small" type="button" id="tp-zero">Tonalité originale</button>
+              <label class="note" for="tp-target">Transposer vers</label>
+              <select class="sel" id="tp-target" aria-label="Tonalité voulue"></select>
+            </div>
+            <div class="opts"><label><input type="checkbox" id="o-voice" checked><span><b>Voix naturelle</b> (correction des formants)<br><span class="note" id="voice-note"></span></span></label></div>
+            <div class="warnline" id="tp-warn" hidden>Au-delà de 5 demi-tons, le son devient moins naturel (voix un peu métallique).</div>
+            <div class="note" id="tp-hint" hidden></div>
+            <details class="adv" id="adv">
+              <summary>Accordage fin</summary>
+              <div class="in">
+                <div class="tempo">
+                  <input type="range" id="cents" min="-50" max="50" step="1" value="0" aria-label="Accordage fin en cents">
+                  <span class="val" id="cents-val">0 cent</span>
+                </div>
+                <p class="note" id="tuning-note">Utile quand un enregistrement n'est pas accordé à La 440 : ton instrument sonnera juste avec la chanson.</p>
+                <div class="toolbar"><button class="btn small" type="button" id="tune-440" disabled>Ramener à La 440</button><button class="btn small" type="button" id="cents-zero">0 cent</button></div>
+              </div>
+            </details>
+          </div>
       </div>
-      </div>
 
-      <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
-      <div class="card" id="bars-card" hidden>
-        <div class="cardhead"><p class="label">📏 Mesures</p><span class="note" id="bars-info"></span></div>
-        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
-        <p class="empty-b" id="bars-empty"></p>
-        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
-      </div>
-
+      <!-- ===== Boucle, vitesse et mesures ===== -->
       <div class="tools" id="practice" hidden>
         <div class="card" id="loop-card">
           <div class="cardhead"><p class="label">🔁 Boucle et vitesse</p><span class="note" id="loop-info"></span></div>
+          <div class="loop-body">
+            <div class="loop-ctrl">
           <div class="sub speed">
             <h3>Vitesse de la chanson</h3>
             <div class="tempo">
@@ -629,8 +640,20 @@ details.adv{border-radius:16px;background:#fbfefc}
             <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
           </div>
           <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
+            </div>
+            <div class="barsbox" id="bars-card" hidden>
+        <div class="cardhead"><h3>📏 Mesures</h3><span class="note" id="bars-info"></span></div>
+        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
+        <p class="empty-b" id="bars-empty"></p>
+        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
+      </div>
+          </div>
         </div>
+      </div>
 
+      <!-- ===== Le reste ===== -->
+      <div class="rest">
+        <div class="col">
         <div class="card" id="metro-card">
           <div class="cardhead"><p class="label">🥁 Métronome</p><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
           <div class="ana" id="m-ana">
@@ -679,40 +702,8 @@ details.adv{border-radius:16px;background:#fbfefc}
             </div>
           </details>
         </div>
-      </div>
-
-      <div class="sidecol">
-          <div class="card">
-            <div class="cardhead"><p class="label">Transposition</p>
-              <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
-            <div class="tp">
-              <button class="tpbtn" type="button" id="tp-down" aria-label="Descendre d'un demi-ton">−</button>
-              <div class="tpval"><div class="n" id="tp-n">0</div><div class="u" id="tp-u">demi-ton (tonalité originale)</div></div>
-              <button class="tpbtn" type="button" id="tp-up" aria-label="Monter d'un demi-ton">+</button>
-            </div>
-            <input class="tprange" type="range" id="tp-range" min="-12" max="12" step="1" value="0" aria-label="Transposition en demi-tons">
-            <div class="tpkeys" id="tp-keys"></div>
-            <div class="toolbar" style="justify-content:center">
-              <button class="btn small" type="button" id="tp-zero">Tonalité originale</button>
-              <label class="note" for="tp-target">Transposer vers</label>
-              <select class="sel" id="tp-target" aria-label="Tonalité voulue"></select>
-            </div>
-            <div class="opts"><label><input type="checkbox" id="o-voice" checked><span><b>Voix naturelle</b> (correction des formants)<br><span class="note" id="voice-note"></span></span></label></div>
-            <div class="warnline" id="tp-warn" hidden>Au-delà de 5 demi-tons, le son devient moins naturel (voix un peu métallique).</div>
-            <div class="note" id="tp-hint" hidden></div>
-            <details class="adv" id="adv">
-              <summary>Accordage fin</summary>
-              <div class="in">
-                <div class="tempo">
-                  <input type="range" id="cents" min="-50" max="50" step="1" value="0" aria-label="Accordage fin en cents">
-                  <span class="val" id="cents-val">0 cent</span>
-                </div>
-                <p class="note" id="tuning-note">Utile quand un enregistrement n'est pas accordé à La 440 : ton instrument sonnera juste avec la chanson.</p>
-                <div class="toolbar"><button class="btn small" type="button" id="tune-440" disabled>Ramener à La 440</button><button class="btn small" type="button" id="cents-zero">0 cent</button></div>
-              </div>
-            </details>
-          </div>
-
+        </div>
+        <div class="col">
           <div class="card" id="keys-card">
             <div class="cardhead"><p class="label">Tonalité et modulations</p><span class="note" id="an-state"></span></div>
             <div id="keys-empty" class="empty-k"><strong>Pas encore d'analyse</strong><span id="keys-empty-t">Ouvre un fichier, ou active le son transposé d'une vidéo : la tonalité apparaît pendant l'écoute.</span></div>
@@ -735,6 +726,28 @@ details.adv{border-radius:16px;background:#fbfefc}
             <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
             <p class="note" id="capo-note"></p>
           </div>
+      <!-- ===== Fiche : titre, notes, enregistrement ===== -->
+      <div class="card" id="fiche-card">
+        <p class="label">Fiche de la chanson</p>
+        <div class="fields">
+          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
+          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+        </div>
+        <div class="field notes-f">
+          <label for="notes">Notes personnelles</label>
+          <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
+        </div>
+        <div class="toolbar">
+          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
+          <div class="chips" id="stamps" aria-label="Moments notés"></div>
+          <span style="margin-left:auto"></span>
+          <button class="btn small primary" id="save" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
+        </div>
+        <div class="status" id="status" role="status"></div>
+        <p class="note">La librairie garde le lien, la transposition, le tempo, la boucle, la tonalité et tes notes. Le son, lui, n'est jamais enregistré.</p>
+      </div>
+        </div>
       </div>
 
     </section>
@@ -786,7 +799,7 @@ details.adv{border-radius:16px;background:#fbfefc}
   </main>
 </div>
 
-<script src="en.js?v=8"></script>
+<script src="en.js?v=9"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -805,6 +818,6 @@ details.adv{border-radius:16px;background:#fbfefc}
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=1"></script>
 <script src="app.js?v=11"></script>
-<script src="practice.js?v=9"></script>
+<script src="practice.js?v=10"></script>
 </body>
 </html>

@@ -160,7 +160,7 @@ t:{
 "Active le son dans la petite fenêtre « Moteur audio » : l'analyse commencera ensuite.":"Turn on the sound in the small “Audio engine” window: the analysis will start then.",
 "Tempo provisoire : il se précise pendant l'écoute. Clique sur « Garder ce tempo » quand il te convient.":"Provisional tempo: it gets more precise as you listen. Click “Keep this tempo” when it fits.",
 "Fais jouer la chanson : les temps apparaissent après une douzaine de secondes.":"Play the song: beats appear after about twelve seconds.",
-"Avec tes corrections.":"With your corrections.","Enregistre la chanson dans ta librairie (Fiche, plus bas) pour garder cette analyse.":"Save the song to your library (Song sheet, below) to keep this analysis.","Avec tes corrections. Enregistre la chanson dans ta librairie (Fiche, plus bas) pour garder cette analyse.":"With your corrections. Save the song to your library (Song sheet, below) to keep this analysis.","Dernière vérification…":"Final check…",
+"Avec tes corrections.":"With your corrections.","Enregistre la chanson dans ta librairie (Fiche de la chanson) pour garder cette analyse.":"Save the song to your library (Song sheet) to keep this analysis.","Avec tes corrections. Enregistre la chanson dans ta librairie (Fiche, plus bas) pour garder cette analyse.":"With your corrections. Save the song to your library (Song sheet) to keep this analysis.","Dernière vérification…":"Final check…",
 "Tempo détecté (méthode simple).":"Tempo detected (simple method).",
 "Ouvre une chanson pour trouver son tempo.":"Open a song to find its tempo.",
 "Le tempo apparaît après quelques secondes d'écoute. Tu peux aussi le taper.":"The tempo appears after a few seconds of listening. You can also tap it.",

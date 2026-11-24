@@ -703,7 +703,7 @@ PR.sync = () => {
     else note = g ? 'Tempo provisoire : il se précise pendant l\'écoute. Clique sur « Garder ce tempo » quand il te convient.' : 'Fais jouer la chanson : les temps apparaissent après une douzaine de secondes.';
   } else if (mode === 'lock') {
     $('m-done-t').textContent = `Tempo analysé et verrouillé · ${Math.round(60 / g.period)} BPM · ${g.meter} temps`;
-    note = (MULT !== 1 || METER || ADJ ? 'Avec tes corrections. ' : '') + (OPENED ? '' : 'Enregistre la chanson dans ta librairie (Fiche, plus bas) pour garder cette analyse.');
+    note = (MULT !== 1 || METER || ADJ ? 'Avec tes corrections. ' : '') + (OPENED ? '' : 'Enregistre la chanson dans ta librairie (Fiche de la chanson) pour garder cette analyse.');
   } else if (mode === 'tap') { $('m-done-t').textContent = `Tempo tapé · ${g ? Math.round(60 / g.period) : '—'} BPM`; note = ''; }
   else if (mode === 'dsp') note = g ? 'Tempo détecté (méthode simple).' : 'Le tempo apparaît après quelques secondes d\'écoute. Tu peux aussi le taper.';
   else if (mode === 'nosrc') note = 'Ouvre une chanson pour trouver son tempo.';
