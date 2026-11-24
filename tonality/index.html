@@ -275,6 +275,17 @@ body.qbar-on main{padding-bottom:110px}
 .stage .player{width:100%;max-width:880px;margin:0 auto}
 .stage .transport{max-width:880px;margin:0 auto;width:100%}
 .stage #cap-box{max-width:880px;margin:0 auto;width:100%}
+.top{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:20px;align-items:start}
+.top .col{display:grid;gap:20px;min-width:0}
+@media (max-width:1100px){ .top{grid-template-columns:minmax(0,1fr)} .top .stage .player{max-width:620px;margin:0 auto;width:100%} }
+.stage .howto{font-size:13px;padding:8px 12px}
+.stage .howto ol{margin:4px 0 0;padding-left:20px}
+.mrow{display:flex;align-items:center;justify-content:center;gap:10px 26px;flex-wrap:wrap}
+.mrow .bpm{flex-direction:column;gap:0;align-items:center}
+.mrow .beats{min-height:46px}
+.speed{border-top:0;padding-top:0;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.speed h3{margin:0}
+#loop-card,#metro-card{gap:12px}
 .ana{display:grid;gap:8px}
 .ana .toolbar{justify-content:center}
 .ana #m-analyze{font-size:15px;padding:11px 22px;background:var(--accent-hi);color:#fff;border-color:var(--accent-hi)}
@@ -287,21 +298,25 @@ body.qbar-on main{padding-bottom:110px}
 .ana .note{text-align:center}
 .fixes .btn[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 .fixes h3{margin:0}
-.bars{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;max-height:252px;overflow-y:auto;padding:2px;user-select:none;touch-action:pan-y}
-@media (max-width:720px){ .bars{grid-template-columns:repeat(4,minmax(0,1fr))} }
-.bars .bar{font:inherit;position:relative;display:grid;gap:4px;justify-items:start;align-content:start;text-align:left;height:56px;padding:5px 7px;border:1.5px solid var(--line-hi);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
-.bars .bar .num{font-size:12px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
-.bars .bar .dots{display:flex;gap:4px;flex-wrap:wrap}
-.bars .bar .dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);background:#fff}
-.bars .bar .dots i.one{width:10px;height:10px;border-color:var(--ink);border-width:2px}
+.bars{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px;max-height:166px;overflow-y:auto;padding:2px;user-select:none;touch-action:pan-y}
+@media (max-width:1100px){ .bars{grid-template-columns:repeat(12,minmax(0,1fr))} }
+@media (max-width:720px){ .bars{grid-template-columns:repeat(8,minmax(0,1fr))} }
+.bars .bar{font:inherit;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;text-align:left;gap:2px;height:30px;padding:2px 4px;border:1px solid var(--line-hi);border-radius:5px;background:#fff;color:var(--ink);cursor:pointer;min-width:0}
+.bars .bar .num{font-size:10.5px;font-weight:800;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
+.bars .bar .dots{display:flex;gap:2px;flex-wrap:nowrap;overflow:hidden}
+.bars .bar .dots i{width:5px;height:5px;border-radius:50%;border:1px solid var(--muted);background:#fff;flex:none}
+.bars .bar .dots i.one{border-color:var(--ink);border-width:1.5px}
 .bars .bar.inloop{background:#d5efe3;border-color:var(--accent-hi)}
-.bars .bar.lstart{border-left:5px solid var(--accent-hi)}
-.bars .bar.lend{border-right:5px solid var(--accent-hi)}
-.bars .bar.now{border:2.5px solid var(--ink);box-shadow:0 0 0 2px #fff inset}
+.bars .bar.lstart{border-left:4px solid var(--accent-hi)}
+.bars .bar.lend{border-right:4px solid var(--accent-hi)}
+.bars .bar.now{border:2px solid var(--ink);background:#fff}
+.bars .bar.now.inloop{background:#d5efe3}
 .bars .bar.now .num{color:var(--ink)}
-.bars .bar .dots i.on{background:var(--ink);border-color:var(--ink);transform:scale(1.25)}
+.bars .bar .dots i.on{background:var(--ink);border-color:var(--ink)}
 .bars .bar .dots i.one.on{background:var(--accent-hi);border-color:var(--accent-hi)}
 .bars .bar:hover{border-color:var(--ink)}
+#bars-card{gap:8px;padding:14px 18px}
+#bars-card .note{margin:0}
 .empty-b{border:1px dashed var(--line-hi);border-radius:12px;padding:16px;text-align:center;color:var(--muted);margin:0;font-size:14px}
 .empty-b:empty{display:none}
 .tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
@@ -399,6 +414,7 @@ body.qbar-on main{padding-bottom:110px}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Transposer un autre onglet</button>
       </div>
 
+      <div class="top">
       <div class="card stage">
             <div class="cardhead"><p class="label">Source</p></div>
             <div class="player" id="player-box">
@@ -443,111 +459,7 @@ body.qbar-on main{padding-bottom:110px}
               </div>
             </div>
           </div>
-
-      <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
-      <div class="card" id="bars-card" hidden>
-        <div class="cardhead"><p class="label">📏 Mesures</p><span class="note" id="bars-info"></span></div>
-        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
-        <p class="empty-b" id="bars-empty"></p>
-        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
-      </div>
-
-      <div class="tools" id="practice" hidden>
-        <div class="card" id="loop-card">
-          <div class="cardhead"><p class="label">🔁 Boucle A-B</p><span class="note" id="loop-info"></span></div>
-          <div class="ab">
-            <button class="btn small" type="button" id="set-a">Point A ici</button>
-            <span class="pt" id="pt-a" aria-label="Point A">A —</span>
-            <button class="ib" type="button" id="a-m" aria-label="Reculer le point A">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A">▶</button>
-          </div>
-          <div class="ab">
-            <button class="btn small" type="button" id="set-b">Point B ici</button>
-            <span class="pt" id="pt-b" aria-label="Point B">B —</span>
-            <button class="ib" type="button" id="b-m" aria-label="Reculer le point B">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B">▶</button>
-          </div>
-          <div class="row2">
-            <span class="lab">Aimanter à</span>
-            <div class="seg3" role="group" aria-label="Aimanter la boucle">
-              <button type="button" data-snap="off" aria-pressed="true">Non</button><button type="button" data-snap="beat" aria-pressed="false">Temps</button><button type="button" data-snap="bar" aria-pressed="false">Mesures</button>
-            </div>
-          </div>
-          <div class="row2">
-            <span class="lab">Boucle de</span>
-            <div class="seg3" role="group" aria-label="Boucle d'un nombre de mesures">
-              <button type="button" data-bars="1">1</button><button type="button" data-bars="2">2</button><button type="button" data-bars="4">4</button><button type="button" data-bars="8">8</button>
-            </div>
-            <span class="lab">mesures</span>
-          </div>
-          <p class="note" id="snap-note"></p>
-          <p class="note">Astuce : le plus simple est de glisser sur les mesures, au-dessus.</p>
-          <div class="toolbar">
-            <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
-            <button class="btn small" type="button" id="go-a">Aller au point A</button>
-            <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
-          </div>
-          <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
-        </div>
-
-        <div class="card" id="metro-card">
-          <div class="cardhead"><p class="label">🥁 Métronome</p><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
-          <div class="ana" id="m-ana">
-            <div class="toolbar"><button class="btn" type="button" id="m-analyze" hidden>🔍 Analyser le tempo</button><button class="btn small" type="button" id="m-keep" hidden>🔒 Garder ce tempo</button></div>
-            <div class="prog" id="m-prog" hidden><div class="pbar"><i id="m-prog-i"></i></div><span class="pt" id="m-prog-t"></span><button class="btn small" type="button" id="m-cancel" hidden>Arrêter</button></div>
-            <div class="done" id="m-done" hidden><span id="m-done-t"></span><button class="lnk" type="button" id="m-redo">Refaire l'analyse</button></div>
-            <p class="note" id="m-ana-n"></p>
-          </div>
-          <div class="beats" id="m-beats" aria-hidden="true"></div>
-          <div class="bpm"><div><b id="m-bpm">—</b> <span>BPM</span></div><div class="note" id="m-bpm-s"></div></div>
-          <div class="sub" style="border-top:0;padding-top:0">
-            <h3>Vitesse de la chanson</h3>
-            <div class="tempo">
-              <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
-              <span class="val" id="tempo-val">100 %</span>
-              <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
-            </div>
-            <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
-          </div>
-          <div class="sub fixes">
-            <h3>Ça ne colle pas ? Corrige :</h3>
-            <div class="row2"><span class="lab">Le « 1 »</span>
-              <button class="btn small" type="button" id="m-one" title="Appuie pendant la lecture, au moment d'un premier temps">👆 C'est le 1 !</button>
-              <button class="btn small" type="button" id="m-prev">◀ Plus tôt</button><button class="btn small" type="button" id="m-next">Plus tard ▶</button>
-            </div>
-            <div class="row2"><span class="lab">Les clics</span>
-              <button class="btn small" type="button" id="m-half" aria-pressed="false">2× plus lents</button><button class="btn small" type="button" id="m-double" aria-pressed="false">2× plus rapides</button>
-            </div>
-            <div class="row2"><label class="lab" for="m-meter">Mesure</label>
-              <select class="sel" id="m-meter"><option value="2">2 temps</option><option value="3">3 temps</option><option value="4" selected>4 temps</option><option value="5">5 temps</option><option value="6">6 temps</option><option value="7">7 temps</option></select>
-              <button class="btn small" type="button" id="m-tap" title="Tape au moins 4 fois au rythme de la chanson, en commençant sur un premier temps">Taper le tempo</button>
-            </div>
-          </div>
-          <details class="adv">
-            <summary>🔊 Son et réglages du métronome</summary>
-            <div class="in">
-              <div class="row2">
-                <span class="lab">Subdivision</span>
-                <div class="seg3" role="group" aria-label="Subdivision">
-                  <button type="button" data-sub="1" aria-pressed="true" title="Noires" aria-label="Noires">♩</button><button type="button" data-sub="2" aria-pressed="false" title="Croches" aria-label="Croches">♪♪</button><button type="button" data-sub="3" aria-pressed="false" title="Triolets" aria-label="Triolets">3</button><button type="button" data-sub="4" aria-pressed="false" title="Doubles croches" aria-label="Doubles croches">♬♬</button>
-                </div>
-              </div>
-              <div class="row2">
-                <label class="lab" for="m-sound">Son</label>
-                <select class="sel" id="m-sound"><option value="bois">Bloc de bois</option><option value="bip">Bip</option><option value="clave">Clave</option><option value="cloche">Cloche</option><option value="clic">Clic</option></select>
-                <label class="chk"><input type="checkbox" id="m-accent" checked> Accent sur le 1er temps</label>
-              </div>
-              <div class="tempo"><span class="lab">Métronome</span><input type="range" id="m-vol" min="0" max="100" step="1" value="70" aria-label="Volume du métronome"><span class="val" id="m-vol-v">70 %</span></div>
-              <div class="tempo"><span class="lab">Chanson</span><input type="range" id="s-vol" min="0" max="100" step="1" value="100" aria-label="Volume de la chanson"><span class="val" id="s-vol-v">100 %</span></div>
-              <label class="chk"><input type="checkbox" id="m-autosync" checked> Synchronisation automatique avec la musique <span class="note" id="m-sync-v"></span></label>
-              <div class="tempo"><span class="lab">Décalage</span><input type="range" id="m-off" min="-200" max="200" step="5" value="0" aria-label="Décalage du métronome en millisecondes"><span class="val" id="m-off-v">0 ms</span></div>
-              <p class="note">Si les clics arrivent un peu avant ou après les temps de la chanson, déplace le décalage (négatif = plus tôt).</p>
-            </div>
-          </details>
-        </div>
-      </div>
-
-      <div class="grid">
-        <!-- ===== Colonne droite : transposition, tonalité, capo ===== -->
-        <div class="col">
+        <div class="col sidecol">
           <div class="card">
             <div class="cardhead"><p class="label">Transposition</p>
               <select class="sel" id="o-lang" aria-label="Noms des notes"><option value="fr">Do Ré Mi</option><option value="en">C D E</option><option value="de">C D H</option></select></div>
@@ -601,6 +513,108 @@ body.qbar-on main{padding-bottom:110px}
             <div class="capo" id="capo" role="group" aria-label="Choix du capo"></div>
             <p class="note" id="capo-note"></p>
           </div>
+        </div>
+      </div>
+
+      <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
+      <div class="card" id="bars-card" hidden>
+        <div class="cardhead"><p class="label">📏 Mesures</p><span class="note" id="bars-info"></span></div>
+        <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
+        <p class="empty-b" id="bars-empty"></p>
+        <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
+      </div>
+
+      <div class="tools" id="practice" hidden>
+        <div class="card" id="loop-card">
+          <div class="cardhead"><p class="label">🔁 Boucle et vitesse</p><span class="note" id="loop-info"></span></div>
+          <div class="sub speed">
+            <h3>Vitesse de la chanson</h3>
+            <div class="tempo">
+              <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
+              <span class="val" id="tempo-val">100 %</span>
+              <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
+            </div>
+            <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
+          </div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-a">Point A ici</button>
+            <span class="pt" id="pt-a" aria-label="Point A">A —</span>
+            <button class="ib" type="button" id="a-m" aria-label="Reculer le point A">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A">▶</button>
+          </div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-b">Point B ici</button>
+            <span class="pt" id="pt-b" aria-label="Point B">B —</span>
+            <button class="ib" type="button" id="b-m" aria-label="Reculer le point B">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B">▶</button>
+          </div>
+          <div class="row2">
+            <span class="lab">Aimanter à</span>
+            <div class="seg3" role="group" aria-label="Aimanter la boucle">
+              <button type="button" data-snap="off" aria-pressed="true">Non</button><button type="button" data-snap="beat" aria-pressed="false">Temps</button><button type="button" data-snap="bar" aria-pressed="false">Mesures</button>
+            </div>
+          </div>
+          <div class="row2">
+            <span class="lab">Boucle de</span>
+            <div class="seg3" role="group" aria-label="Boucle d'un nombre de mesures">
+              <button type="button" data-bars="1">1</button><button type="button" data-bars="2">2</button><button type="button" data-bars="4">4</button><button type="button" data-bars="8">8</button>
+            </div>
+            <span class="lab">mesures</span>
+          </div>
+          <p class="note" id="snap-note"></p>
+          <div class="toolbar">
+            <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
+            <button class="btn small" type="button" id="go-a">Aller au point A</button>
+            <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
+          </div>
+          <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
+        </div>
+
+        <div class="card" id="metro-card">
+          <div class="cardhead"><p class="label">🥁 Métronome</p><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
+          <div class="ana" id="m-ana">
+            <div class="toolbar"><button class="btn" type="button" id="m-analyze" hidden>🔍 Analyser le tempo</button><button class="btn small" type="button" id="m-keep" hidden>🔒 Garder ce tempo</button></div>
+            <div class="prog" id="m-prog" hidden><div class="pbar"><i id="m-prog-i"></i></div><span class="pt" id="m-prog-t"></span><button class="btn small" type="button" id="m-cancel" hidden>Arrêter</button></div>
+            <div class="done" id="m-done" hidden><span id="m-done-t"></span><button class="lnk" type="button" id="m-redo">Refaire l'analyse</button></div>
+            <p class="note" id="m-ana-n"></p>
+          </div>
+          <div class="mrow">
+            <div class="beats" id="m-beats" aria-hidden="true"></div>
+            <div class="bpm"><div><b id="m-bpm">—</b> <span>BPM</span></div><div class="note" id="m-bpm-s"></div></div>
+          </div>
+          <div class="sub fixes">
+            <h3>Ça ne colle pas ? Corrige :</h3>
+            <div class="row2"><span class="lab">Le « 1 »</span>
+              <button class="btn small" type="button" id="m-one" title="Appuie pendant la lecture, au moment d'un premier temps">👆 C'est le 1 !</button>
+              <button class="btn small" type="button" id="m-prev">◀ Plus tôt</button><button class="btn small" type="button" id="m-next">Plus tard ▶</button>
+            </div>
+            <div class="row2"><span class="lab">Les clics</span>
+              <button class="btn small" type="button" id="m-half" aria-pressed="false">2× plus lents</button><button class="btn small" type="button" id="m-double" aria-pressed="false">2× plus rapides</button>
+            </div>
+            <div class="row2"><label class="lab" for="m-meter">Mesure</label>
+              <select class="sel" id="m-meter"><option value="2">2 temps</option><option value="3">3 temps</option><option value="4" selected>4 temps</option><option value="5">5 temps</option><option value="6">6 temps</option><option value="7">7 temps</option></select>
+              <button class="btn small" type="button" id="m-tap" title="Tape au moins 4 fois au rythme de la chanson, en commençant sur un premier temps">Taper le tempo</button>
+            </div>
+          </div>
+          <details class="adv">
+            <summary>🔊 Son et réglages du métronome</summary>
+            <div class="in">
+              <div class="row2">
+                <span class="lab">Subdivision</span>
+                <div class="seg3" role="group" aria-label="Subdivision">
+                  <button type="button" data-sub="1" aria-pressed="true" title="Noires" aria-label="Noires">♩</button><button type="button" data-sub="2" aria-pressed="false" title="Croches" aria-label="Croches">♪♪</button><button type="button" data-sub="3" aria-pressed="false" title="Triolets" aria-label="Triolets">3</button><button type="button" data-sub="4" aria-pressed="false" title="Doubles croches" aria-label="Doubles croches">♬♬</button>
+                </div>
+              </div>
+              <div class="row2">
+                <label class="lab" for="m-sound">Son</label>
+                <select class="sel" id="m-sound"><option value="bois">Bloc de bois</option><option value="bip">Bip</option><option value="clave">Clave</option><option value="cloche">Cloche</option><option value="clic">Clic</option></select>
+                <label class="chk"><input type="checkbox" id="m-accent" checked> Accent sur le 1er temps</label>
+              </div>
+              <div class="tempo"><span class="lab">Métronome</span><input type="range" id="m-vol" min="0" max="100" step="1" value="70" aria-label="Volume du métronome"><span class="val" id="m-vol-v">70 %</span></div>
+              <div class="tempo"><span class="lab">Chanson</span><input type="range" id="s-vol" min="0" max="100" step="1" value="100" aria-label="Volume de la chanson"><span class="val" id="s-vol-v">100 %</span></div>
+              <label class="chk"><input type="checkbox" id="m-autosync" checked> Synchronisation automatique avec la musique <span class="note" id="m-sync-v"></span></label>
+              <div class="tempo"><span class="lab">Décalage</span><input type="range" id="m-off" min="-200" max="200" step="5" value="0" aria-label="Décalage du métronome en millisecondes"><span class="val" id="m-off-v">0 ms</span></div>
+              <p class="note">Si les clics arrivent un peu avant ou après les temps de la chanson, déplace le décalage (négatif = plus tôt).</p>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -674,7 +688,7 @@ body.qbar-on main{padding-bottom:110px}
   </main>
 </div>
 
-<script src="en.js?v=7"></script>
+<script src="en.js?v=8"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -693,6 +707,6 @@ body.qbar-on main{padding-bottom:110px}
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=1"></script>
 <script src="app.js?v=11"></script>
-<script src="practice.js?v=8"></script>
+<script src="practice.js?v=9"></script>
 </body>
 </html>
