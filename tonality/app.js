@@ -98,7 +98,9 @@ function clearSource() {
   const box = $('player-box'); box.className = 'player';
   [...box.children].forEach(c => { if (c.id !== 'player-ph') c.remove(); });
   $('player-ph').hidden = false;
-  $('cap-box').hidden = true; $('transport').hidden = true; $('practice').hidden = true;
+  // sans chanson : la procédure reste affichée à côté du lecteur
+  $('cap-box').hidden = false; $('howto').hidden = false; $('howto-yt').hidden = false; $('howto-tab').hidden = true; $('activate').hidden = true; $('live').hidden = true;
+  $('transport').hidden = true; $('practice').hidden = true;
   setStatus($('src-status'), '');
   TR = null; ANA = null; SAVED = null; DUR = 0; LIVE = false; OVR = []; CAPO = null; MAXT = -1; TABT = 0;
   window.__lastMono = null; if (window.PR && PR.reset) PR.reset();
@@ -140,7 +142,7 @@ function loadFile(file, keepSettings) {
   media = el;
   el.addEventListener('loadedmetadata', () => { DUR = el.duration || DUR; renderAll(); });
   el.addEventListener('play', updateTransport); el.addEventListener('pause', updateTransport);
-  $('transport').hidden = false; $('practice').hidden = false;
+  $('cap-box').hidden = true; $('transport').hidden = false; $('practice').hidden = false;
   if (!$('f-title').dataset.touched && !keep) fillTitle(file.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' '), '');
   analyzeFile(file);
   syncControls(); renderAll();
@@ -299,7 +301,7 @@ function engineOn(kind) {
   CAP = { engine: true, sr: 0 };
   ENGINE = kind; syncEngine();
   LIVE = true;
-  $('activate').hidden = true; $('howto').hidden = true; $('live').hidden = false;
+  $('activate').hidden = true; $('live').hidden = false;
   setStatus($('src-status'), 'Son transposé actif. Fais jouer la vidéo : la tonalité apparaît pendant l\'écoute. La petite fenêtre « Moteur audio » peut rester derrière, mais ne la ferme pas.', 'ok');
   const p = ytp(); if (p) { try { if (p.getPlayerState() !== 1) p.playVideo(); } catch (e) { } }
   renderAll(); syncBar();
@@ -332,7 +334,7 @@ async function captureOtherTab() {
   CAP = { stream, src };
   at.addEventListener('ended', () => { if (CAP && CAP.stream === stream) deactivate(false, 'Le partage s\'est arrêté. Clique sur « Activer le son transposé » pour reprendre.'); });
   LIVE = true;
-  $('activate').hidden = true; $('howto').hidden = true; $('live').hidden = false;
+  $('activate').hidden = true; $('live').hidden = false;
   setStatus(st, 'Son transposé actif. Fais jouer la chanson dans l\'autre onglet : la tonalité apparaît pendant l\'écoute.', 'ok');
   renderAll();
 }

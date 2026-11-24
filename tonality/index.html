@@ -417,6 +417,12 @@ details.adv{border-radius:16px;background:#fbfefc}
 #fiche-card textarea{min-height:110px}
 @media (max-width:980px){ .loop-body,.rest{grid-template-columns:minmax(0,1fr)} .barsbox{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px} }
 @media (max-width:900px){ .toprow{grid-template-columns:minmax(0,1fr)} }
+/* colonnes de même hauteur : lecteur à gauche, transposition + fiche à droite */
+.toprow{align-items:stretch}
+.toprow .card.stage{display:flex;flex-direction:column;gap:12px}
+.toprow .stage .transport{margin-top:auto}
+.tpcol{grid-template-rows:auto 1fr}
+#fiche-card{justify-content:space-between}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -523,7 +529,7 @@ details.adv{border-radius:16px;background:#fbfefc}
               </div>
             </div>
 
-            <div id="cap-box" hidden style="display:grid;gap:12px">
+            <div id="cap-box" style="display:grid;gap:12px">
               <div class="howto" id="howto">
                 <div id="howto-yt">
                   <strong>Pour entendre la transposition :</strong>
@@ -535,7 +541,7 @@ details.adv{border-radius:16px;background:#fbfefc}
                 </div>
               </div>
               <div class="toolbar">
-                <button class="btn primary big" type="button" id="activate">
+                <button class="btn primary big" type="button" id="activate" hidden>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Activer le son transposé</button>
               </div>
               <div class="live" id="live" hidden>
@@ -595,13 +601,13 @@ details.adv{border-radius:16px;background:#fbfefc}
           <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
           <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
         </div>
-        <div class="field notes-f">
+        <div class="field notes-f" hidden>
           <label for="notes">Notes personnelles</label>
           <textarea id="notes" placeholder="Ex. : [1:12] le refrain monte d'un ton · chanter une octave plus bas · capo 2 pour Léa…"></textarea>
         </div>
         <div class="toolbar">
-          <button class="btn small" type="button" id="stamp" title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
-          <div class="chips" id="stamps" aria-label="Moments notés"></div>
+          <button class="btn small" type="button" id="stamp" hidden title="Ajoute le moment actuel de la chanson dans tes notes"><span>⏱ Insérer le moment (<span id="stamp-t">0:00</span>)</span></button>
+          <div class="chips" id="stamps" hidden aria-label="Moments notés"></div>
           <span style="margin-left:auto"></span>
           <button class="btn small primary" id="save" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
@@ -813,7 +819,7 @@ details.adv{border-radius:16px;background:#fbfefc}
 <script src="keys.js?v=2"></script>
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=1"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 <script src="practice.js?v=10"></script>
 </body>
 </html>
