@@ -101,6 +101,7 @@ function clearSource() {
   $('cap-box').hidden = true; $('transport').hidden = true; $('practice').hidden = true;
   setStatus($('src-status'), '');
   TR = null; ANA = null; SAVED = null; DUR = 0; LIVE = false; OVR = []; CAPO = null; MAXT = -1; TABT = 0;
+  if (window.PR && PR.reset) PR.reset();
 }
 function resetSong() {
   ST = 0; CT = 0; TEMPO = 1; A = null; B = null; LOOP = false;
@@ -125,9 +126,9 @@ function fillTitle(rawTitle, author) {
 function loadFile(file, keepSettings) {
   if (!file) return;
   const keep = keepSettings || (OPENED && OPENED.source && OPENED.source.type === 'file' && OPENED.source.name === file.name);
-  const saved = keep ? { SAVED, OVR: OVR.slice(), CAPO } : null;
+  const saved = keep ? { SAVED, OVR: OVR.slice(), CAPO, practice: window.PR ? PR.save() : null } : null;
   clearSource(); if (!keep) resetSong();
-  if (saved) { SAVED = saved.SAVED; OVR = saved.OVR; CAPO = saved.CAPO; }
+  if (saved) { SAVED = saved.SAVED; OVR = saved.OVR; CAPO = saved.CAPO; if (window.PR) PR.load(saved.practice); }
   SRC = { type: 'file', name: file.name };
   const isVideo = /^video\//.test(file.type) || /\.(mp4|mov|m4v|webm|mkv)$/i.test(file.name);
   const el = document.createElement(isVideo ? 'video' : 'audio');
@@ -159,15 +160,16 @@ async function analyzeFile(file) {
     if (!SRC || SRC.type !== 'file' || SRC.name !== file.name) return;
     DUR = buf.duration;
     const L = buf.getChannelData(0), R = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
-    const tr = new KE.Tracker(buf.sampleRate), n = 16384, chunk = new Float32Array(n);
+    const tr = new KE.Tracker(buf.sampleRate), tt = PR.newTracker(buf.sampleRate), n = 16384, chunk = new Float32Array(n);
     for (let i = 0; i < L.length; i += n) {
       const len = Math.min(n, L.length - i), c = len === n ? chunk : new Float32Array(len);
       for (let j = 0; j < len; j++) c[j] = R ? (L[i + j] + R[i + j]) / 2 : L[i + j];
-      tr.push(c, i / buf.sampleRate, 1);
+      tr.push(c, i / buf.sampleRate, 1); tt.push(c, i / buf.sampleRate, 1);
       if ((i / n) % 40 === 39) { $('an-state').textContent = 'Analyse… ' + Math.round(100 * i / L.length) + ' %'; await new Promise(r => setTimeout(r, 0)); }
     }
     TR = tr; LIVE = false;
     ANA = tr.analyze();
+    PR.setAnalysis(tt.analyze(), DUR);
     if (ANA) ANA.heard = DUR;
     SAVED = null;
     setStatus(st, ANA ? `« ${file.name} » est prêt. Clique sur ▶ pour l'écouter.` : 'Ce fichier semble muet : aucune tonalité trouvée.', ANA ? 'ok' : 'err');
@@ -348,6 +350,7 @@ function deactivate(silent, msg) {
     setStatus($('src-status'), msg || (SRC && SRC.type === 'youtube' ? 'Son transposé arrêté. La vidéo joue maintenant à sa hauteur originale.' : 'Son transposé arrêté.'));
   }
   if (TR) { ANA = TR.analyze() || ANA; LIVE = false; }
+  if (window.PR) PR.live();
   renderAll();
 }
 function onChunk(chunk, sr) {
@@ -359,15 +362,15 @@ function onChunk(chunk, sr) {
   if (SRC.type === 'youtube') {
     const p = ytp(); if (!p) return;
     let state = -1, vt = 0, rate = 1;
-    try { state = p.getPlayerState(); vt = p.getCurrentTime(); rate = p.getPlaybackRate() || 1; } catch (er) { return; }
+    try { state = p.getPlayerState(); vt = (window.PR && PR.mediaNow) ? PR.mediaNow() : p.getCurrentTime(); rate = p.getPlaybackRate() || 1; } catch (er) { return; }
     if (state !== 1) return;
     const t0 = vt - (len + LAT) * rate;
     if (t0 < MAXT - 1.5) return;               // passage déjà entendu (retour en arrière, boucle) : rien à apprendre
-    TR.push(chunk, Math.max(0, t0), rate);
+    TR.push(chunk, Math.max(0, t0), rate); PR.push(chunk, Math.max(0, t0), rate, sr);
     MAXT = Math.max(MAXT, t0 + len * rate);
   } else {
     if (lastLevel < 0.0008 && TR.frames.length === 0) return; // attendre que la musique commence
-    TR.push(chunk, TABT, 1); TABT += len;
+    TR.push(chunk, TABT, 1); PR.push(chunk, TABT, 1, sr); TABT += len;
   }
 }
 // fenêtre « Moteur audio » fermée par l'utilisateur
@@ -380,6 +383,7 @@ setInterval(() => {
   lastFrames = TR.frames.length;
   const r = TR.analyze();
   if (r) { ANA = r; ANA.heard = TR.heard; renderKeys(); renderCapo(); renderTp(); }
+  PR.live();
 }, 3000);
 
 /* ================= Commandes de lecture ================= */
@@ -439,12 +443,7 @@ function updateTransport() {
     $('stamp-t').textContent = fmtT(t);
   }
 }
-// boucle A-B + suivi de la position
-setInterval(() => {
-  if (!SRC) return;
-  const t = P.time();
-  if (LOOP && A != null && B != null && B > A + 0.2 && t != null && t >= B && P.canSeek()) P.seek(A);
-}, 40);
+// la fin de boucle (et le décompte) est gérée dans practice.js
 let lastSegIdx = -2;
 setInterval(() => {
   if (!SRC) return;
@@ -511,6 +510,7 @@ function syncControls() {
   $('cents').value = CT; $('cents-val').textContent = signed(CT) + ' ' + pl(CT, 'cent', 'cents');
   $('tempo').value = Math.round(TEMPO * 100); $('tempo-val').textContent = Math.round(TEMPO * 100) + ' %';
   $('pt-a').textContent = 'A ' + (A != null ? fmtT1(A) : '—'); $('pt-b').textContent = 'B ' + (B != null ? fmtT1(B) : '—');
+  if (window.PR && PR.sync) PR.sync();
   $('loop').setAttribute('aria-pressed', LOOP ? 'true' : 'false');
   ['a-m', 'a-p', 'go-a'].forEach(id => $(id).disabled = A == null);
   ['b-m', 'b-p'].forEach(id => $(id).disabled = B == null);
@@ -699,7 +699,8 @@ function itemData() {
     kind: 'tonality', title: $('f-title').value.trim(), artist: $('f-artist').value.trim(), savedAt: Date.now(), source: src,
     st: ST, cents: CT, tempo: TEMPO, a: A, b: B, loop: LOOP, capo: CAPO, lang: LANG(), notes: $('notes').value, duration: Math.round((DUR || 0) * 10) / 10,
     analysis: base ? { tuning: base.tuning, start: base.start, end: base.end, heard: Math.round((base.heard || 0) * 10) / 10, segments: base.segments.map(s => ({ t0: Math.round(s.t0 * 10) / 10, t1: Math.round(s.t1 * 10) / 10, key: s.key, conf: s.conf, alt: s.alt || null })) } : null,
-    ovr: OVR
+    ovr: OVR,
+    practice: window.PR ? PR.save() : null
   };
 }
 async function saveToLibrary() {
@@ -726,6 +727,7 @@ function openItem(it) {
   ST = it.st || 0; CT = it.cents || 0; TEMPO = it.tempo || 1; A = it.a != null ? it.a : null; B = it.b != null ? it.b : null; LOOP = !!it.loop; CAPO = it.capo != null ? it.capo : null;
   OVR = (it.ovr || []).map(o => ({ t: o.t, key: o.key }));
   SAVED = it.analysis ? Object.assign({}, it.analysis) : null;
+  if (window.PR) PR.load(it.practice);
   DUR = it.duration || DUR;
   if (it.lang) $('o-lang').value = it.lang;
   $('f-title').value = it.title; $('f-artist').value = it.artist || '';
@@ -862,8 +864,8 @@ $('b-p').onclick = () => { B = Math.round((B + 0.1) * 10) / 10; syncControls(); 
 $('loop').onclick = () => { LOOP = !LOOP; syncControls(); if (LOOP && A != null) { const t = P.time(); if (t != null && (t < A || t > B)) P.seek(A); } };
 $('go-a').onclick = () => { if (A != null) { P.seek(A); P.play(); } };
 $('clear-ab').onclick = () => { A = null; B = null; LOOP = false; syncControls(); renderKeys(); };
-$('tempo').addEventListener('input', e => { TEMPO = +e.target.value / 100; DIRTY = true; syncControls(); applyTempo(); });
-$('tempo-reset').onclick = () => { TEMPO = 1; syncControls(); applyTempo(); };
+$('tempo').addEventListener('input', e => { TEMPO = +e.target.value / 100; DIRTY = true; syncControls(); applyTempo(); if (window.PR) PR.sync(); });
+$('tempo-reset').onclick = () => { TEMPO = 1; syncControls(); applyTempo(); if (window.PR) PR.sync(); };
 // ligne du temps : clic = aller à ce moment
 $('tl').addEventListener('click', e => {
   if (!P.canSeek()) return;

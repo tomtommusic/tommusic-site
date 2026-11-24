@@ -270,6 +270,36 @@ a.tab{text-decoration:none}
 body.qbar-on main{padding-bottom:110px}
 @media (max-width:380px){ .qbar{gap:6px;padding:6px 8px} .qbar .qv{min-width:78px} .qbar .q0{display:none} }
 @media (max-width:430px){ .qbar.off .q0{display:none} .qbar.off .qp{display:none} }
+
+/* Scène (vidéo en haut) et outils de pratique côte à côte */
+.stage .player{width:100%;max-width:880px;margin:0 auto}
+.stage .transport{max-width:880px;margin:0 auto;width:100%}
+.stage #cap-box{max-width:880px;margin:0 auto;width:100%}
+.tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:980px){ .tools{grid-template-columns:minmax(0,1fr)} }
+.row2{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;font-size:14px}
+.lab{font-size:13px;font-weight:700;color:var(--muted);min-width:74px}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer}
+.chk input{width:17px;height:17px;accent-color:var(--accent)}
+.seg3{display:inline-flex;border:1px solid var(--line-hi);border-radius:10px;overflow:hidden}
+.seg3 button{font:inherit;font-size:14px;font-weight:700;border:0;border-right:1px solid var(--line-hi);background:#fff;color:var(--ink);padding:6px 12px;cursor:pointer;min-width:40px}
+.seg3 button:last-child{border-right:0}
+.seg3 button[aria-pressed="true"]{background:var(--accent-hi);color:#fff}
+.seg3 button:disabled{opacity:.45;cursor:not-allowed}
+.seg3 button[data-sub]{font-size:19px;line-height:1.1;min-width:48px}
+.beats{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;min-height:50px;align-items:center}
+.beats .b{width:44px;height:44px;border-radius:50%;border:2px solid var(--line-hi);display:grid;place-items:center;font-weight:800;font-size:18px;color:var(--muted);background:#fff;transition:transform .06s}
+.beats .b.one{border-width:3px;border-color:var(--ink);color:var(--ink)}
+.beats .b.on{background:var(--ink);color:#fff;border-color:var(--ink);transform:scale(1.15)}
+.beats .b.on.one{background:var(--accent-hi);border-color:var(--accent-hi)}
+.beats.idle .b{opacity:.55}
+.bpm{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;justify-content:center;text-align:center}
+.bpm b{font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bpm span{font-weight:700;color:var(--muted)}
+#m-on[aria-pressed="true"]{background:var(--accent-hi);border-color:var(--accent-hi);color:#fff}
+#m-tap.pulse{animation:tp .18s ease-out}
+@keyframes tp{from{transform:scale(.93);background:var(--accent-hi);color:#fff}to{transform:none}}
+.tempo .lab{min-width:74px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 <meta property="og:type" content="website">
@@ -340,10 +370,7 @@ body.qbar-on main{padding-bottom:110px}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 5v4"/></svg>Transposer un autre onglet</button>
       </div>
 
-      <div class="grid">
-        <!-- ===== Colonne gauche : source, lecture, boucle, tempo ===== -->
-        <div class="col">
-          <div class="card">
+      <div class="card stage">
             <div class="cardhead"><p class="label">Source</p></div>
             <div class="player" id="player-box">
               <div class="ph" id="player-ph">
@@ -388,38 +415,92 @@ body.qbar-on main{padding-bottom:110px}
             </div>
           </div>
 
-          <div class="card" id="practice" hidden>
-            <p class="label">Pratique</p>
-            <div class="sub" style="border-top:0;padding-top:0">
-              <h3>Boucle A-B</h3>
-              <div class="ab">
-                <button class="btn small" type="button" id="set-a">Point A ici</button>
-                <span class="pt" id="pt-a" aria-label="Point A">A —</span>
-                <button class="ib" type="button" id="a-m" aria-label="Reculer le point A" title="Point A : 0,1 s plus tôt">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A" title="Point A : 0,1 s plus tard">▶</button>
-              </div>
-              <div class="ab">
-                <button class="btn small" type="button" id="set-b">Point B ici</button>
-                <span class="pt" id="pt-b" aria-label="Point B">B —</span>
-                <button class="ib" type="button" id="b-m" aria-label="Reculer le point B" title="Point B : 0,1 s plus tôt">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B" title="Point B : 0,1 s plus tard">▶</button>
-              </div>
-              <div class="toolbar">
-                <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
-                <button class="btn small" type="button" id="go-a">Aller au point A</button>
-                <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
-              </div>
-            </div>
-            <div class="sub">
-              <h3>Tempo</h3>
-              <div class="tempo">
-                <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
-                <span class="val" id="tempo-val">100 %</span>
-                <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
-              </div>
-              <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
+      <!-- ===== Outils de pratique : boucle et métronome, côte à côte ===== -->
+      <div class="tools" id="practice" hidden>
+        <div class="card" id="loop-card">
+          <div class="cardhead"><p class="label">🔁 Boucle A-B</p><span class="note" id="loop-info"></span></div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-a">Point A ici</button>
+            <span class="pt" id="pt-a" aria-label="Point A">A —</span>
+            <button class="ib" type="button" id="a-m" aria-label="Reculer le point A">◀</button><button class="ib" type="button" id="a-p" aria-label="Avancer le point A">▶</button>
+          </div>
+          <div class="ab">
+            <button class="btn small" type="button" id="set-b">Point B ici</button>
+            <span class="pt" id="pt-b" aria-label="Point B">B —</span>
+            <button class="ib" type="button" id="b-m" aria-label="Reculer le point B">◀</button><button class="ib" type="button" id="b-p" aria-label="Avancer le point B">▶</button>
+          </div>
+          <div class="row2">
+            <span class="lab">Aimanter aux</span>
+            <div class="seg3" role="group" aria-label="Aimanter la boucle">
+              <button type="button" data-snap="off" aria-pressed="true">Non</button><button type="button" data-snap="beat" aria-pressed="false">Temps</button><button type="button" data-snap="bar" aria-pressed="false">Mesures</button>
             </div>
           </div>
+          <div class="row2">
+            <span class="lab">Boucle de</span>
+            <div class="seg3" role="group" aria-label="Boucle d'un nombre de mesures">
+              <button type="button" data-bars="1">1</button><button type="button" data-bars="2">2</button><button type="button" data-bars="4">4</button><button type="button" data-bars="8">8</button>
+            </div>
+            <span class="lab">mesures</span>
+          </div>
+          <p class="note" id="snap-note"></p>
+          <div class="toolbar">
+            <button class="btn small" type="button" id="loop" aria-pressed="false">🔁 Boucle</button>
+            <button class="btn small" type="button" id="go-a">Aller au point A</button>
+            <button class="btn small" type="button" id="clear-ab">Effacer A-B</button>
+          </div>
+          <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
         </div>
 
+        <div class="card" id="metro-card">
+          <div class="cardhead"><p class="label">🥁 Métronome</p><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
+          <div class="beats" id="m-beats" aria-hidden="true"></div>
+          <div class="bpm"><div><b id="m-bpm">—</b> <span>BPM</span></div><div class="note" id="m-bpm-s">Le tempo apparaît après quelques secondes d'écoute.</div></div>
+          <div class="sub" style="border-top:0;padding-top:0">
+            <h3>Vitesse de la chanson</h3>
+            <div class="tempo">
+              <input type="range" id="tempo" min="50" max="150" step="5" value="100" aria-label="Tempo en pourcentage">
+              <span class="val" id="tempo-val">100 %</span>
+              <button class="ib" type="button" id="tempo-reset" title="Revenir au tempo original">100 %</button>
+            </div>
+            <p class="note" id="tempo-note">Le tempo change sans changer la hauteur.</p>
+          </div>
+          <div class="sub">
+            <div class="toolbar">
+              <button class="btn small" type="button" id="m-half" title="Le métronome va deux fois trop vite">÷ 2</button>
+              <button class="btn small" type="button" id="m-double" title="Le métronome va deux fois trop lentement">× 2</button>
+              <button class="btn small" type="button" id="m-tap">👆 Taper le tempo</button>
+              <button class="btn small" type="button" id="m-auto" hidden>Revenir à la détection</button>
+            </div>
+            <div class="row2">
+              <label class="lab" for="m-meter">Mesure</label>
+              <select class="sel" id="m-meter"><option value="2">2 temps</option><option value="3">3 temps</option><option value="4" selected>4 temps</option><option value="5">5 temps</option><option value="6">6 temps</option><option value="7">7 temps</option></select>
+              <button class="btn small" type="button" id="m-one">Le 1er temps est ici</button>
+            </div>
+            <div class="row2">
+              <span class="lab">Subdivision</span>
+              <div class="seg3" role="group" aria-label="Subdivision">
+                <button type="button" data-sub="1" aria-pressed="true" title="Noires" aria-label="Noires">♩</button><button type="button" data-sub="2" aria-pressed="false" title="Croches" aria-label="Croches">♪♪</button><button type="button" data-sub="3" aria-pressed="false" title="Triolets" aria-label="Triolets">3</button><button type="button" data-sub="4" aria-pressed="false" title="Doubles croches" aria-label="Doubles croches">♬♬</button>
+              </div>
+            </div>
+            <div class="row2">
+              <label class="lab" for="m-sound">Son</label>
+              <select class="sel" id="m-sound"><option value="bois">Bloc de bois</option><option value="bip">Bip</option><option value="clave">Clave</option><option value="cloche">Cloche</option><option value="clic">Clic</option></select>
+              <label class="chk"><input type="checkbox" id="m-accent" checked> Accent sur le 1er temps</label>
+            </div>
+            <div class="tempo"><span class="lab">Métronome</span><input type="range" id="m-vol" min="0" max="100" step="1" value="70" aria-label="Volume du métronome"><span class="val" id="m-vol-v">70 %</span></div>
+            <div class="tempo"><span class="lab">Chanson</span><input type="range" id="s-vol" min="0" max="100" step="1" value="100" aria-label="Volume de la chanson"><span class="val" id="s-vol-v">100 %</span></div>
+            <details class="adv">
+              <summary>Synchronisation</summary>
+              <div class="in">
+                <div class="tempo"><span class="lab">Décalage</span><input type="range" id="m-off" min="-200" max="200" step="5" value="0" aria-label="Décalage du métronome en millisecondes"><span class="val" id="m-off-v">0 ms</span></div>
+                <p class="note">Si les clics arrivent un peu avant ou après les temps de la chanson, déplace ce curseur (négatif = plus tôt).</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid">
         <!-- ===== Colonne droite : transposition, tonalité, capo ===== -->
         <div class="col">
           <div class="card">
@@ -548,7 +629,7 @@ body.qbar-on main{padding-bottom:110px}
   </main>
 </div>
 
-<script src="en.js?v=1"></script>
+<script src="en.js?v=2"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -562,8 +643,10 @@ body.qbar-on main{padding-bottom:110px}
   <button class="q0" type="button" id="q-zero" title="Revenir à la tonalité originale">0</button>
   <button class="qa" type="button" id="q-act" hidden>Activer le son</button>
 </div>
-<script src="audio-engine.js?v=3"></script>
+<script src="audio-engine.js?v=4"></script>
 <script src="keys.js?v=2"></script>
-<script src="app.js?v=5"></script>
+<script src="tempo.js?v=1"></script>
+<script src="app.js?v=7"></script>
+<script src="practice.js?v=2"></script>
 </body>
 </html>
