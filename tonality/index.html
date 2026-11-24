@@ -452,6 +452,18 @@ details.adv{border-radius:16px;background:#fbfefc}
 #fiche-card #save{white-space:nowrap;padding:9px 14px}
 #fiche-card .note{font-size:12px;margin:0}
 @media (max-width:560px){ #fiche-card .fields{grid-template-columns:minmax(0,1fr)} }
+/* gauche et droite de même hauteur; fiche compacte */
+.toprow{align-items:stretch}
+.toprow .card.stage{display:flex;flex-direction:column}
+.toprow .stage .transport{margin-top:auto}
+.tpcol{grid-template-rows:1fr auto}
+#fiche-card{padding:12px 16px;gap:6px}
+#fiche-card .label{font-size:15px}
+#fiche-card .field label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#fiche-card .fields{gap:8px}
+#fiche-card .field input{padding:6px 10px}
+#fiche-card #save{padding:7px 12px}
+#fiche-card > .note{display:none}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -627,8 +639,8 @@ details.adv{border-radius:16px;background:#fbfefc}
       <div class="card" id="fiche-card">
         <p class="label">Fiche de la chanson</p>
         <div class="fields">
-          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off"></div>
-          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off"></div>
+          <div class="field"><label for="f-title">Titre</label><input id="f-title" autocomplete="off" placeholder="Titre"></div>
+          <div class="field"><label for="f-artist">Artiste</label><input id="f-artist" autocomplete="off" placeholder="Artiste"></div>
           <button class="btn small primary" id="save" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Enregistrer dans la librairie</button>
         </div>
