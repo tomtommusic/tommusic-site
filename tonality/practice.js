@@ -126,11 +126,13 @@ async function finishRun() {
 PR.reset = () => {
   TT = null; TANA = null; TSAVED = null; MANUAL = null; MULT = 1; METER = null; ADJ = 0; GRID = null; SCHED.clear(); COUNTING = false; TAPS.length = 0;
   MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLPROG = 0; MLBUSY = false; RUN = null; REF = null; lvReset(); changed(); if (MLC) MLC.reset().catch(() => { });
+  SY.tr = null; SY.L0 = null; SY.corr = 0; SY.hist.length = 0;
   PR.sync();
 };
 PR.newTracker = sr => new TP.Tracker(sr);
 PR.setAnalysis = (r, heard) => { if (r) { TANA = r; TANA.heard = heard; } changed(); PR.sync(); };
-PR.push = (chunk, t0, rate, sr, fresh = true) => { if (fresh) { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); } mlPush(chunk, t0, rate, sr); };
+PR.push = (chunk, t0, rate, sr, fresh = true) => {
+  syPush(chunk, t0, rate, sr); if (fresh) { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); } mlPush(chunk, t0, rate, sr); };
 PR.live = () => {
   mlLive();
   if (useDsp() && TT && TT.frames.length >= 300) { const r = TT.analyze(); if (r) { TANA = r; TANA.heard = TT.heard; changed(); PR.sync(); } }
@@ -149,6 +151,7 @@ PR.load = p => {
   TSAVED = p.tempo ? { bpm: p.tempo.bpm, beats: p.tempo.beats, downbeat4: p.tempo.d4, downbeat3: p.tempo.d3, meterGuess: p.tempo.mg, heard: p.tempo.heard } : null;
   const m = p.ml && p.ml.beats && p.ml.beats.length >= 8 ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0, done: !!p.ml.done } : null;
   MLLOCK = m && m.done ? m : null; if (m && !m.done && !MLA) MLA = m;
+  SY.corr = 0; SY.hist.length = 0;
   MANUAL = p.manual || null; MULT = p.mult || 1; METER = p.meter || null; ADJ = p.adj || 0; REF = null; changed(); PR.sync();
 };
 function useDsp() { return !ML_OK || MLSTATE === 'error'; }
@@ -332,6 +335,58 @@ function clickOut() {
   return { now: () => ctx.currentTime, play: (w, l) => TonalityAudio.playClick(ctx, w, MET.sound, l, MET.vol), delay: ((SRC && SRC.type === 'file' && eng) ? eng.latency : 0) - slowCorr(rateNow()) };
 }
 
+/* ---------- synchronisation automatique (YouTube) ----------
+   Le son capturé est comparé en continu à la grille des temps. Si la musique arrive plus tôt ou plus tard que prévu
+   (reprise après une pause, délai de capture de Chrome qui change…), les clics et l'affichage se recalent tout seuls. */
+const SY = { tr: null, L0: null, corr: 0, hist: [], last: 0, est: null, at: 0 };
+const SY_DEFAULT_L0 = 0.005;   // écart habituel entre l'attaque entendue et le temps trouvé par l'IA, mesuré en direct
+if (MET.autoSync == null) MET.autoSync = true;
+function syPush(chunk, t0, rate, sr) {
+  if (!SRC || SRC.type !== 'youtube') return;
+  if (!SY.tr || SY.tr.sr !== sr) SY.tr = new TP.Tracker(sr);
+  SY.tr.push(chunk, t0, rate);
+  const F = SY.tr.frames;
+  if (!RUN && F.length > 2400) F.splice(0, F.length - 1600);   // garder ~18 s (tout garder pendant l'analyse complète)
+}
+function syInterp(ts, vs, t) {
+  let lo = 0, hi = ts.length - 1; if (t <= ts[0] || t >= ts[hi]) return 0;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (ts[m] <= t) lo = m; else hi = m; }
+  const a = (t - ts[lo]) / (ts[hi] - ts[lo] || 1); return vs[lo] * (1 - a) + vs[hi] * a;
+}
+// décalage (s) qui aligne le mieux les attaques entendues sur la grille, entre t0 et t1
+function syEstimate(F, g, t0, t1, center, span) {
+  const W = F.filter(f => f.t >= t0 && f.t <= t1); if (W.length < 150 || W[W.length - 1].t - W[0].t < (t1 - t0) * 0.9) return null;
+  for (let i = 1; i < W.length; i++) if (W[i].t - W[i - 1].t > 0.1 || W[i].t < W[i - 1].t) return null;   // pas de saut dans la fenêtre
+  const ts = W.map(f => f.t), raw = W.map(f => f.v), vs = raw.map((v, i) => (raw[i - 1] || 0) * 0.25 + v * 0.5 + (raw[i + 1] || 0) * 0.25);
+  const B = []; for (let i = Math.max(0, idxAt(g, t0)); i < g.beats.length && g.beats[i] < t1; i++) if (g.beats[i] > t0 + span + 0.05 && g.beats[i] < t1 - span - 0.05) B.push(g.beats[i]);
+  if (B.length < 6) return null;
+  let best = -1, bl = 0, sum = 0, n = 0;
+  for (let L = center - span; L <= center + span + 1e-9; L += 0.004) { let sc = 0; for (const b of B) sc += syInterp(ts, vs, b + L); sum += sc; n++; if (sc > best) { best = sc; bl = L; } }
+  return best > 1.6 * (sum / n) ? bl : null;
+}
+setInterval(() => {
+  if (!SRC || SRC.type !== 'youtube' || !SY.tr || !MET.autoSync || RUN) return;
+  if (!CAP || !P.playing() || Math.abs(rateNow() - 1) > 0.3) { SY.hist.length = 0; return; }
+  const g = grid(); if (!g || g.source === 'dsp') return;
+  const F = SY.tr.frames; if (F.length < 300) return;
+  const t1 = F[F.length - 1].t - 0.05, t0 = t1 - Math.max(4.5, 8 * g.period);
+  const L0 = SY.L0 != null ? SY.L0 : SY_DEFAULT_L0;
+  const span = Math.min(0.3, 0.45 * g.period);   // au-delà d'un demi-temps, impossible de savoir dans quel sens corriger
+  const e = syEstimate(F, g, t0, t1, L0, span);
+  SY.at = Date.now();
+  if (e == null) return;
+  SY.est = e - L0; SY.hist.push(SY.est); if (SY.hist.length > 5) SY.hist.shift();
+  const h = SY.hist.slice(-3); if (h.length < 2) return;
+  if (Math.max(...h) - Math.min(...h) > 0.025) return;            // mesures pas encore d'accord entre elles
+  if (false) return;            // mesures pas encore d'accord entre elles
+  const target = median(h), diff = target - SY.corr;
+  if (Math.abs(diff) < 0.008) return;
+  SY.corr = Math.abs(diff) > 0.035 ? target : SY.corr + 0.6 * diff;
+  SCHED.clear(); PR.sync();
+}, 1000);
+const syncShift = () => (MET.autoSync && SRC && SRC.type === 'youtube' && CAP) ? SY.corr : 0;
+PR._sy = SY;
+
 /* ---------- ordonnanceur du métronome ---------- */
 const SCHED = new Set();
 let lastMt = null;
@@ -354,7 +409,7 @@ setInterval(() => {
   const mt = mediaNow(), rate = rateNow(); if (mt == null) return;
   if (lastMt != null && (mt < lastMt - 0.05 || mt > lastMt + 0.6)) SCHED.clear();
   lastMt = mt;
-  const now = out.now(), d = out.delay + MET.offset / 1000;
+  const now = out.now(), d = out.delay + MET.offset / 1000 + syncShift() / rate;
   const from = mt - Math.max(0, d) * rate - 0.01, to = mt + 0.22 * rate;
   const loopOn = LOOP && A != null && B != null && B > A + 0.2;
   for (const { e, level } of ticksBetween(g, from, to)) {
@@ -416,7 +471,7 @@ function visLoop() {
   const g = grid();
   let heard = null;
   if (g) {
-    if (P.playing()) { const out = clickOut(), rate = rateNow(), mt = mediaNow(); if (mt != null) heard = mt - ((out ? out.delay : 0) + MET.offset / 1000) * rate; }
+    if (P.playing()) { const out = clickOut(), rate = rateNow(), mt = mediaNow(); if (mt != null) heard = mt - ((out ? out.delay : 0) + MET.offset / 1000) * rate - syncShift(); }
     else heard = P.time();
   }
   buildRuler(); paintRuler(heard);
@@ -568,6 +623,7 @@ async function startAnalysis() {
   MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLBUSY = false; REF = null; lvReset(); changed();
   if (MLC) await MLC.reset().catch(() => { });
   RUN = { kind: 'yt', prev: { tempo: TEMPO, loop: LOOP }, t0: Date.now() };
+  SY.tr = null; SY.L0 = null; SY.corr = 0; SY.hist.length = 0;
   if (Math.abs(TEMPO - 1) > 0.001) { TEMPO = 1; applyTempo(); }
   LOOP = false; syncControls();
   P.seek(0); P.play();
@@ -663,6 +719,8 @@ PR.sync = () => {
   $('m-sound').value = MET.sound; $('m-accent').checked = MET.accent; $('o-countin').checked = MET.countIn;
   $('m-vol').value = Math.round(MET.vol * 100); $('m-vol-v').textContent = Math.round(MET.vol * 100) + ' %';
   $('s-vol').value = Math.round(MET.songVol * 100); $('s-vol-v').textContent = Math.round(MET.songVol * 100) + ' %';
+  $('m-autosync').checked = !!MET.autoSync;
+  $('m-sync-v').textContent = !(SRC && SRC.type === 'youtube') ? '(YouTube seulement)' : !MET.autoSync ? '' : SY.corr ? `correction actuelle : ${SY.corr > 0 ? '+' : '−'}${Math.round(Math.abs(SY.corr) * 1000)} ms` : 'en place';
   $('m-off').value = MET.offset; $('m-off-v').textContent = (MET.offset > 0 ? '+' : MET.offset < 0 ? '−' : '') + Math.abs(MET.offset) + ' ms';
   // --- règle des mesures ---
   buildRuler();
@@ -720,6 +778,7 @@ $('m-accent').onchange = e => { MET.accent = e.target.checked; saveMetPrefs(); S
 $('o-countin').onchange = e => { MET.countIn = e.target.checked; saveMetPrefs(); };
 $('m-vol').oninput = e => { MET.vol = +e.target.value / 100; $('m-vol-v').textContent = e.target.value + ' %'; saveMetPrefs(); };
 $('s-vol').oninput = e => { MET.songVol = +e.target.value / 100; $('s-vol-v').textContent = e.target.value + ' %'; saveMetPrefs(); };
+$('m-autosync').onchange = e => { MET.autoSync = e.target.checked; SY.hist.length = 0; saveMetPrefs(); SCHED.clear(); PR.sync(); };
 $('m-off').oninput = e => { MET.offset = +e.target.value; saveMetPrefs(); SCHED.clear(); PR.sync(); };
 document.querySelectorAll('[data-snap]').forEach(b => b.onclick = () => {
   SNAP = b.dataset.snap; saveMetPrefs();

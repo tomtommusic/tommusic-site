@@ -537,6 +537,7 @@ body.qbar-on main{padding-bottom:110px}
               </div>
               <div class="tempo"><span class="lab">Métronome</span><input type="range" id="m-vol" min="0" max="100" step="1" value="70" aria-label="Volume du métronome"><span class="val" id="m-vol-v">70 %</span></div>
               <div class="tempo"><span class="lab">Chanson</span><input type="range" id="s-vol" min="0" max="100" step="1" value="100" aria-label="Volume de la chanson"><span class="val" id="s-vol-v">100 %</span></div>
+              <label class="chk"><input type="checkbox" id="m-autosync" checked> Synchronisation automatique avec la musique <span class="note" id="m-sync-v"></span></label>
               <div class="tempo"><span class="lab">Décalage</span><input type="range" id="m-off" min="-200" max="200" step="5" value="0" aria-label="Décalage du métronome en millisecondes"><span class="val" id="m-off-v">0 ms</span></div>
               <p class="note">Si les clics arrivent un peu avant ou après les temps de la chanson, déplace le décalage (négatif = plus tôt).</p>
             </div>
@@ -673,7 +674,7 @@ body.qbar-on main{padding-bottom:110px}
   </main>
 </div>
 
-<script src="en.js?v=6"></script>
+<script src="en.js?v=7"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -692,6 +693,6 @@ body.qbar-on main{padding-bottom:110px}
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=1"></script>
 <script src="app.js?v=11"></script>
-<script src="practice.js?v=6"></script>
+<script src="practice.js?v=8"></script>
 </body>
 </html>

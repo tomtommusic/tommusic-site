@@ -119,7 +119,7 @@ t:{
 "👆 Taper le tempo":"👆 Tap the tempo","Revenir à la détection":"Back to detection","Mesure":"Time signature","Le 1er temps est ici":"Beat 1 is here",
 "Subdivision":"Subdivision","Noires":"Quarter notes","Croches":"Eighth notes","Triolets":"Triplets","Doubles croches":"Sixteenth notes","Son":"Sound","Bloc de bois":"Woodblock","Bip":"Beep","Clave":"Clave","Cloche":"Cowbell","Clic":"Click",
 "Accent sur le 1er temps":"Accent on beat 1","Métronome":"Metronome","Chanson":"Song","Volume du métronome":"Metronome volume","Volume de la chanson":"Song volume",
-"Synchronisation":"Sync","Décalage":"Offset","Décalage du métronome en millisecondes":"Metronome offset in milliseconds",
+"Synchronisation":"Sync","Décalage":"Offset"," Synchronisation automatique avec la musique ":"Automatic sync with the music","Synchronisation automatique avec la musique":"Automatic sync with the music","(YouTube seulement)":"(YouTube only)","en place":"active","Décalage du métronome en millisecondes":"Metronome offset in milliseconds",
 "Si les clics arrivent un peu avant ou après les temps de la chanson, déplace ce curseur (négatif = plus tôt).":"If the clicks land a little before or after the song's beats, move this slider (negative = earlier).",
 "📏 Mesures":"📏 Bars",
 "Clique sur une mesure pour y aller.":"Click a bar to jump to it.",
@@ -177,6 +177,7 @@ t:{
 "Pour aimanter la boucle aux temps, il faut le tempo : fais jouer la chanson quelques secondes (ou tape le tempo).":"To snap the loop to the beats, Tonality needs the tempo: play the song for a few seconds (or tap the tempo)."
 },
 re:[
+[/^correction actuelle : ([+−])(\d+) ms$/,'current correction: $1$2 ms'],
 [/^Analyse… (\d+) %$/,'Analyzing… $1%'],[/^Écouté : (\d+) %$/,'Heard: $1%'],[/^(\d+) temps par mesure$/,'$1 beats per bar'],
 [/^Tempo analysé et verrouillé · (\d+) BPM · (\d+) temps$/,'Tempo analyzed and locked · $1 BPM · $2 beats'],[/^Tempo tapé · (\S+) BPM$/,'Tapped tempo · $1 BPM'],
 [/^La chanson joue du début à la fin à vitesse normale\. Encore environ ([\d:]+)\.(.*)$/,'The song plays from start to finish at normal speed. About $1 left.'],
