@@ -403,6 +403,17 @@ details.adv{border-radius:16px;background:#fbfefc}
 .stage .player:not(.audio):has(> .ph:only-child) .ph span{font-size:13px}
 /* aucune chanson et aucun message : on cache la carte Source (la barre du haut suffit) */
 .card.stage:has(.player:not(.audio) > .ph:only-child):has(#src-status:empty):has(#cap-box[hidden]){display:none}
+/* carte Source : lecteur à gauche, activation à droite, lecture en dessous */
+.card.stage{max-width:940px;grid-template-columns:minmax(0,420px) minmax(0,1fr);column-gap:20px;row-gap:10px;align-items:start}
+.stage > .cardhead,.stage > .transport,.stage > #src-status{grid-column:1 / -1}
+.stage > .player{grid-column:1}
+.stage > #cap-box{grid-column:2;grid-row:2;align-content:start;gap:10px!important}
+.stage:has(#cap-box[hidden]){max-width:460px;grid-template-columns:minmax(0,1fr)}
+.stage .howto{font-size:12.5px;line-height:1.45}
+.stage #activate{padding:10px 18px;font-size:14.5px}
+.stage #src-status:empty{display:none}
+.stage .transport{margin-top:2px}
+@media (max-width:820px){ .card.stage{grid-template-columns:minmax(0,1fr)} .stage > #cap-box{grid-column:1;grid-row:auto} }
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
