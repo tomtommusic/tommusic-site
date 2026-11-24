@@ -163,7 +163,7 @@ if (typeof AudioWorkletProcessor !== 'undefined') {
       const L = inp[0], R = inp[1] || L;
       for (let i = 0; i < L.length; i++) {
         this.buf[this.n++] = (L[i] + R[i]) / 2;
-        if (this.n === this.buf.length) { this.port.postMessage({ chunk: this.buf }, [this.buf.buffer]); this.buf = new Float32Array(4096); this.n = 0; }
+        if (this.n === this.buf.length) { this.port.postMessage({ chunk: this.buf, t: (currentFrame + i + 1) / sampleRate }, [this.buf.buffer]); this.buf = new Float32Array(4096); this.n = 0; }
       }
       return true;
     }

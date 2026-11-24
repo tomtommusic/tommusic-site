@@ -15,7 +15,8 @@ let METER = null;                             // mesure choisie (null = trouvée
 let ADJ = 0;                                  // déplacement du « 1 » choisi par l'utilisateur, en temps
 let SNAP = 'beat';
 let COUNTING = false;
-const LAT_CAP = 0.04;                          // délai approximatif de la capture d'onglet
+const LAT_CAP = 0.04;                          // délai approximatif de la capture d'onglet (le même dans l'analyse et pour les clics : une erreur s'annule)
+PR.LAT_CAP = LAT_CAP;
 const MET = Object.assign({ on: false, sub: 1, sound: 'bois', vol: 0.7, accent: true, offset: 0, countIn: false, songVol: 1 },
   (() => { try { return JSON.parse(localStorage.getItem('tonality-metro') || '{}'); } catch (e) { return {}; } })());
 MET.on = false;
@@ -73,12 +74,14 @@ function mlPush(chunk, t0, rate, sr) {
   const sg = LV.segs.get(LV.seg), len = chunk.length / sr;
   const last = sg.pieces[sg.pieces.length - 1];
   const pred = last ? last.t + (sg.a - last.a) * last.rate : null;
-  if (!last || last.rate !== rate || Math.abs(pred - t0) > 0.02) sg.pieces.push({ a: sg.a, t: t0, rate });
+  // même segment : on garde une correspondance régulière (médiane des écarts) plutôt que de suivre chaque petit écart d'horloge
+  if (!last || last.rate !== rate || Math.abs(pred + (last.fix || 0) - t0) > 0.08) sg.pieces.push({ a: sg.a, t: t0, rate, err: [0] });
+  else { last.err.push(t0 - pred); if (last.err.length > 400) last.err.splice(0, 200); last.fix = median(last.err); }
   sg.a += len; LV.lastEnd = t0 + len * rate; covAdd(t0, LV.lastEnd);
   LV.pend.push(new Float32Array(chunk)); LV.pendLen += chunk.length; LV.newSec += len; LV.total += len;
   if (LV.pendLen >= sr) mlFlush();
 }
-function audioToMedia(sg, x) { let p = sg.pieces[0]; for (const q of sg.pieces) { if (q.a <= x) p = q; else break; } return p.t + (x - p.a) * p.rate; }
+function audioToMedia(sg, x) { let p = sg.pieces[0]; for (const q of sg.pieces) { if (q.a <= x) p = q; else break; } return p.t + (p.fix || 0) + (x - p.a) * p.rate; }
 async function mlRun(final) {
   const token = MLTOKEN;
   if (!MLA) { MLSTATE = 'loading'; PR.sync(); }

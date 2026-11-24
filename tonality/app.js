@@ -288,7 +288,7 @@ function hookEngine() {
   if (!POP || POP.closed || !POP.ENG) return;
   const E = POP.ENG;
   E.set(params());
-  E.onChunk = (chunk, sr) => onChunk(chunk, sr);
+  E.onChunk = (chunk, sr, abs) => onChunk(chunk, sr, abs);
   E.onState = (state, msg, kind) => {
     if (state === 'active') engineOn(kind);
     else if (CAP && CAP.engine) deactivate(false, msg || 'Son transposé arrêté.');
@@ -355,7 +355,7 @@ function deactivate(silent, msg) {
   if (window.PR) PR.live();
   renderAll();
 }
-function onChunk(chunk, sr) {
+function onChunk(chunk, sr, abs) {
   let e = 0; for (let i = 0; i < chunk.length; i += 4) e += chunk[i] * chunk[i];
   lastLevel = Math.sqrt(e / (chunk.length / 4));
   if (!CAP || !SRC) return;
@@ -366,7 +366,9 @@ function onChunk(chunk, sr) {
     let state = -1, vt = 0, rate = 1;
     try { state = p.getPlayerState(); vt = (window.PR && PR.mediaNow) ? PR.mediaNow() : p.getCurrentTime(); rate = p.getPlaybackRate() || 1; } catch (er) { return; }
     if (state !== 1) return;
-    const t0 = vt - (len + LAT) * rate;
+    // position du bloc dans la chanson : heure exacte du son (abs) si connue, sinon délai moyen estimé
+    const age = abs ? Math.max(0, (performance.timeOrigin + performance.now() - abs) / 1000) : null;
+    const t0 = age != null && age < 2 ? vt - (age + len + (window.PR ? PR.LAT_CAP : 0.04)) * rate : vt - (len + LAT) * rate;
     const fresh = t0 >= MAXT - 1.5;             // passage déjà entendu (retour en arrière, boucle) : rien à apprendre pour la tonalité
     if (fresh) TR.push(chunk, Math.max(0, t0), rate);
     PR.push(chunk, Math.max(0, t0), rate, sr, fresh);   // l'analyse des temps décide elle-même (elle peut réécouter depuis le début)

@@ -10,7 +10,7 @@
 
   async function build(ctx, opts) {
     opts = opts || {};
-    if (!ctx.__tonalityModule) ctx.__tonalityModule = ctx.audioWorklet.addModule(HERE + 'shifter.js?v=3');
+    if (!ctx.__tonalityModule) ctx.__tonalityModule = ctx.audioWorklet.addModule(HERE + 'shifter.js?v=4');
     await ctx.__tonalityModule;
     let node = null, kind = 'maison';
     if (!opts.forceMaison && typeof root.SignalsmithStretch === 'function') {
@@ -29,7 +29,8 @@
     let tap = null, sink = null;
     if (opts.onChunk) {
       tap = new AudioWorkletNode(ctx, 'tonality-tap', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
-      tap.port.onmessage = e => { if (e.data && e.data.chunk) opts.onChunk(e.data.chunk, ctx.sampleRate); };
+      // t : heure (horloge audio) du dernier échantillon du bloc → convertie en heure absolue, pour situer le bloc dans la chanson sans dépendre des délais de messages
+      tap.port.onmessage = e => { if (e.data && e.data.chunk) { const abs = e.data.t != null ? performance.timeOrigin + performance.now() - (ctx.currentTime - e.data.t) * 1000 : null; opts.onChunk(e.data.chunk, ctx.sampleRate, abs); } };
       sink = ctx.createGain(); sink.gain.value = 0; tap.connect(sink); sink.connect(ctx.destination);
     }
     const srcs = [];
