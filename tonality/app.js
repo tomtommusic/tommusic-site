@@ -101,7 +101,7 @@ function clearSource() {
   $('cap-box').hidden = true; $('transport').hidden = true; $('practice').hidden = true;
   setStatus($('src-status'), '');
   TR = null; ANA = null; SAVED = null; DUR = 0; LIVE = false; OVR = []; CAPO = null; MAXT = -1; TABT = 0;
-  if (window.PR && PR.reset) PR.reset();
+  window.__lastMono = null; if (window.PR && PR.reset) PR.reset();
 }
 function resetSong() {
   ST = 0; CT = 0; TEMPO = 1; A = null; B = null; LOOP = false;
@@ -171,7 +171,7 @@ async function analyzeFile(file) {
     ANA = tr.analyze();
     PR.setAnalysis(tt.analyze(), DUR);
     // temps et premiers temps par l'IA (dans un fil de calcul, en arrière-plan)
-    { const mono = new Float32Array(L.length); for (let j = 0; j < L.length; j++) mono[j] = R ? (L[j] + R[j]) / 2 : L[j]; PR.mlFile(mono, buf.sampleRate, DUR); }
+    { const mono = new Float32Array(L.length); for (let j = 0; j < L.length; j++) mono[j] = R ? (L[j] + R[j]) / 2 : L[j]; window.__lastMono = { mono, sr: buf.sampleRate, dur: DUR }; PR.mlFile(mono, buf.sampleRate, DUR); }
     if (ANA) ANA.heard = DUR;
     SAVED = null;
     setStatus(st, ANA ? `« ${file.name} » est prêt. Clique sur ▶ pour l'écouter.` : 'Ce fichier semble muet : aucune tonalité trouvée.', ANA ? 'ok' : 'err');
