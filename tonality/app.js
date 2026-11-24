@@ -367,8 +367,9 @@ function onChunk(chunk, sr) {
     try { state = p.getPlayerState(); vt = (window.PR && PR.mediaNow) ? PR.mediaNow() : p.getCurrentTime(); rate = p.getPlaybackRate() || 1; } catch (er) { return; }
     if (state !== 1) return;
     const t0 = vt - (len + LAT) * rate;
-    if (t0 < MAXT - 1.5) return;               // passage déjà entendu (retour en arrière, boucle) : rien à apprendre
-    TR.push(chunk, Math.max(0, t0), rate); PR.push(chunk, Math.max(0, t0), rate, sr);
+    const fresh = t0 >= MAXT - 1.5;             // passage déjà entendu (retour en arrière, boucle) : rien à apprendre pour la tonalité
+    if (fresh) TR.push(chunk, Math.max(0, t0), rate);
+    PR.push(chunk, Math.max(0, t0), rate, sr, fresh);   // l'analyse des temps décide elle-même (elle peut réécouter depuis le début)
     MAXT = Math.max(MAXT, t0 + len * rate);
   } else {
     if (lastLevel < 0.0008 && TR.frames.length === 0) return; // attendre que la musique commence
@@ -705,6 +706,8 @@ function itemData() {
     practice: window.PR ? PR.save() : null
   };
 }
+// après une analyse du tempo : mise à jour automatique si la chanson est déjà dans la librairie
+function autoSave() { if (OPENED && $('f-title').value.trim()) saveToLibrary(); }
 async function saveToLibrary() {
   const st = $('status');
   if (!SRC && !OPENED) { setStatus(st, 'Rien à enregistrer pour l\'instant. Ouvre une chanson d\'abord.', 'err'); return; }

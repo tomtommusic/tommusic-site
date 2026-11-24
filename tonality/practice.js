@@ -5,7 +5,7 @@
 const TP = window.TonalityTempo;
 const PR = window.PR = {};
 PR._grid = () => grid();
-PR._t = { run: () => { RUN = { kind: "yt", prev: null }; }, finish: () => finishRun(), raw: () => rawTempo() };
+PR._t = { fresh: () => { MLTOKEN++; MLA = null; MLLOCK = null; REF = null; MLBUSY = false; lvReset(); changed(); return MLC ? MLC.reset() : null; }, run: () => { RUN = { kind: "yt", prev: null }; }, finish: () => finishRun(), raw: () => rawTempo() };
 
 /* ---------- état ---------- */
 let TT = null, TANA = null, TSAVED = null;   // ancienne détection (secours si l'IA n'est pas disponible)
@@ -39,6 +39,7 @@ function covAdd(a, b) {
   COV.length = 0; COV.push(...o);
 }
 const covered = () => COV.reduce((s, c) => s + c[1] - c[0], 0);
+const covHas = (a, b) => COV.some(c => c[0] <= a + 0.05 && c[1] >= b - 0.05);
 const changed = () => { MLV++; GRID = null; };
 
 PR.mlFile = async (mono, sr, dur) => {
@@ -64,6 +65,7 @@ function mlPush(chunk, t0, rate, sr) {
   if (!ML_OK || MLLOCK) return;
   // l'IA reconnaît mal les temps d'un son ralenti ou accéléré : on n'écoute qu'à vitesse normale
   if (Math.abs(rate - 1) > 0.02) { LV.lastEnd = null; return; }
+  if (covHas(t0, t0 + chunk.length / sr * rate)) { LV.lastEnd = null; return; }   // déjà entendu (boucle, retour en arrière)
   // un saut dans la chanson ou un changement de fréquence : nouveau segment
   if (LV.lastEnd == null || Math.abs(t0 - LV.lastEnd) > 0.25 || sr !== LV.sr) {
     mlFlush(); LV.seg++; LV.sr = sr; LV.segs.set(LV.seg, { pieces: [], a: 0 });
@@ -99,16 +101,23 @@ async function mlLive(force) {
   PR.sync();
 }
 // fin de l'analyse complète (YouTube) : dernière analyse, puis on verrouille
+let FINISH_FAIL = 0;
 async function finishRun() {
   if (!RUN || RUN.kind !== 'yt' || RUN.finishing) return;
-  RUN.finishing = true;
+  RUN.finishing = true; PR.sync();
   while (MLBUSY) await new Promise(r => setTimeout(r, 100));
   MLBUSY = true;
-  try { const r = await mlRun(true); if (r && r.beats.length >= 8) { MLLOCK = Object.assign(r, { done: true }); MLA = r; MLSTATE = 'done'; changed(); DIRTY = true; } }
-  catch (e) { MLSTATE = 'error'; }
+  let ok = false;
+  try {
+    const r = LV.total > 5 ? await mlRun(true) : null;
+    const best = r && r.beats.length >= 8 ? r : MLA && MLA.beats.length >= 8 ? MLA : null;   // au pire, on garde la grille provisoire
+    if (best) { MLLOCK = Object.assign({}, best, { done: true }); MLA = best; MLSTATE = 'done'; changed(); DIRTY = true; ok = true; }
+  } catch (e) { console.warn('Tonality : fin d\'analyse impossible', e); if (MLA && MLA.beats.length >= 8) { MLLOCK = Object.assign({}, MLA, { done: true }); changed(); DIRTY = true; ok = true; } }
   finally { MLBUSY = false; }
+  if (!ok) { FINISH_FAIL = Date.now(); setStatus($('src-status'), 'L\'analyse du tempo n\'a pas entendu la chanson. Vérifie que le son transposé est activé (le niveau doit bouger), puis relance « Analyser le tempo ».', 'err'); }
   const prev = RUN.prev; RUN = null;
   if (prev) { LOOP = prev.loop; if (Math.abs(prev.tempo - TEMPO) > 0.001) { TEMPO = prev.tempo; applyTempo(); } syncControls(); }
+  if (ok && DIRTY && typeof autoSave === 'function') { try { autoSave(); } catch (e) { } }
   PR.sync();
 }
 PR.reset = () => {
@@ -118,7 +127,7 @@ PR.reset = () => {
 };
 PR.newTracker = sr => new TP.Tracker(sr);
 PR.setAnalysis = (r, heard) => { if (r) { TANA = r; TANA.heard = heard; } changed(); PR.sync(); };
-PR.push = (chunk, t0, rate, sr) => { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); mlPush(chunk, t0, rate, sr); };
+PR.push = (chunk, t0, rate, sr, fresh = true) => { if (fresh) { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); } mlPush(chunk, t0, rate, sr); };
 PR.live = () => {
   mlLive();
   if (useDsp() && TT && TT.frames.length >= 300) { const r = TT.analyze(); if (r) { TANA = r; TANA.heard = TT.heard; changed(); PR.sync(); } }
@@ -586,7 +595,7 @@ setInterval(() => {
   if (RUN && RUN.kind === 'yt') {
     if (Math.abs(rateNow() - 1) > 0.02 && P.playing()) { try { ytp().setPlaybackRate(1); } catch (e) { } }
     if (dur && t != null && (t >= dur - 1.2 || (covered() >= dur * 0.97))) finishRun();
-  } else if (dur > 30 && covered() >= dur * 0.97 && LV.total > 30) { RUN = { kind: 'yt', prev: null }; finishRun(); }
+  } else if (dur > 30 && covered() >= dur * 0.97 && LV.total > 30 && Date.now() - FINISH_FAIL > 60000) { RUN = { kind: 'yt', prev: null }; finishRun(); }
 }, 500);
 
 /* ---------- affichage ---------- */
@@ -623,7 +632,7 @@ PR.sync = () => {
     if (RUN && RUN.kind === 'yt') {
       pct = dur ? Math.min(1, covered() / dur) : 0; const left = dur ? dur * (1 - pct) : 0;
       ptxt = `Analyse… ${Math.round(pct * 100)} %`;
-      note = RUN.finishing ? 'Dernière vérification…' : `La chanson joue du début à la fin à vitesse normale. Encore environ ${fmtMs(left)}.` + (CAP ? '' : ' (Active le son transposé.)');
+      note = RUN.finishing ? 'Dernière vérification…' : !CAP ? 'Le son transposé n\'est pas activé : l\'analyse n\'entend rien. Clique sur « Activer le son transposé ».' : `La chanson joue du début à la fin à vitesse normale. Encore environ ${fmtMs(left)}.`;
     } else {
       pct = MLSTATE === 'loading' ? 0.02 : MLPROG; ptxt = `Analyse… ${Math.round(pct * 100)} %`;
       note = MLSTATE === 'loading' ? 'Chargement de l\'analyse des temps (une seule fois)…' : 'Analyse des temps et des mesures du fichier.';
@@ -635,7 +644,7 @@ PR.sync = () => {
     else note = g ? 'Tempo provisoire : il se précise pendant l\'écoute. Clique sur « Garder ce tempo » quand il te convient.' : 'Fais jouer la chanson : les temps apparaissent après une douzaine de secondes.';
   } else if (mode === 'lock') {
     $('m-done-t').textContent = `Tempo analysé et verrouillé · ${Math.round(60 / g.period)} BPM · ${g.meter} temps`;
-    note = MULT !== 1 || METER || ADJ ? 'Avec tes corrections.' : '';
+    note = (MULT !== 1 || METER || ADJ ? 'Avec tes corrections. ' : '') + (OPENED ? '' : 'Enregistre la chanson dans ta librairie (Fiche, plus bas) pour garder cette analyse.');
   } else if (mode === 'tap') { $('m-done-t').textContent = `Tempo tapé · ${g ? Math.round(60 / g.period) : '—'} BPM`; note = ''; }
   else if (mode === 'dsp') note = g ? 'Tempo détecté (méthode simple).' : 'Le tempo apparaît après quelques secondes d\'écoute. Tu peux aussi le taper.';
   else if (mode === 'nosrc') note = 'Ouvre une chanson pour trouver son tempo.';
