@@ -123,6 +123,8 @@ t:{
 "Si les clics arrivent un peu avant ou après les temps de la chanson, déplace ce curseur (négatif = plus tôt).":"If the clicks land a little before or after the song's beats, move this slider (negative = earlier).",
 "Tempo original":"Original tempo","tempo détecté":"detected tempo","tempo tapé":"tapped tempo","tempo enregistré":"saved tempo",
 "tempo détecté (se précise pendant l'écoute)":"detected tempo (gets more precise as you listen)",
+"temps et mesures trouvés par l'IA":"beats and bars found by AI","temps trouvés par l'IA (se précisent pendant l'écoute)":"beats found by AI (more precise as you listen)",
+"aperçu":"preview","chargement de l'analyse IA des temps…":"loading AI beat analysis…","Temps : ":"Beats: ",
 "Ouvre une chanson pour trouver son tempo.":"Open a song to find its tempo.",
 "Active le son transposé (ou tape le tempo) : Tonality trouve les temps pendant l'écoute.":"Turn on transposed sound (or tap the tempo): Tonality finds the beats while you listen.",
 "Le tempo apparaît après quelques secondes d'écoute. Tu peux aussi le taper.":"The tempo appears after a few seconds of listening. You can also tap it.",
@@ -132,6 +134,7 @@ t:{
 "Pour aimanter la boucle aux temps, il faut le tempo : fais jouer la chanson quelques secondes (ou tape le tempo).":"To snap the loop to the beats, Tonality needs the tempo: play the song for a few seconds (or tap the tempo)."
 },
 re:[
+[/^analyse IA des temps… (\d+) %$/,'AI beat analysis… $1%'],
 [/^(\d+) temps$/,function(m,n){return n+(n==1?' beat':' beats')}],
 [/^(\d+) mesures?$/,function(m,n){return n+(n==1?' bar':' bars')}],
 [/^(\d+),(\d) s$/,"$1.$2 s"],

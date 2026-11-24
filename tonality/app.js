@@ -170,6 +170,8 @@ async function analyzeFile(file) {
     TR = tr; LIVE = false;
     ANA = tr.analyze();
     PR.setAnalysis(tt.analyze(), DUR);
+    // temps et premiers temps par l'IA (dans un fil de calcul, en arrière-plan)
+    { const mono = new Float32Array(L.length); for (let j = 0; j < L.length; j++) mono[j] = R ? (L[j] + R[j]) / 2 : L[j]; PR.mlFile(mono, buf.sampleRate, DUR); }
     if (ANA) ANA.heard = DUR;
     SAVED = null;
     setStatus(st, ANA ? `« ${file.name} » est prêt. Clique sur ▶ pour l'écouter.` : 'Ce fichier semble muet : aucune tonalité trouvée.', ANA ? 'ok' : 'err');

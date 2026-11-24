@@ -4,6 +4,7 @@
 'use strict';
 const TP = window.TonalityTempo;
 const PR = window.PR = {};
+PR._grid = () => grid();
 
 /* ---------- état ---------- */
 let TT = null, TANA = null, TSAVED = null;   // suivi du tempo, analyse en cours, analyse enregistrée
@@ -21,23 +22,90 @@ try { SNAP = localStorage.getItem('tonality-snap') || 'off'; } catch (e) { }
 const saveMetPrefs = () => { try { localStorage.setItem('tonality-metro', JSON.stringify(MET)); localStorage.setItem('tonality-snap', SNAP); } catch (e) { } };
 
 /* ---------- alimentation des analyses (appelé par app.js) ---------- */
-PR.reset = () => { TT = null; TANA = null; TSAVED = null; MANUAL = null; MULT = 1; METER = null; DBT = null; GRID = null; SCHED.clear(); COUNTING = false; TAPS.length = 0; PR.sync(); };
+/* ---------- Beat This! (réseau de neurones, dans un fil de calcul) : source principale des temps et des premiers temps ---------- */
+const ML_OK = !!(window.BeatML && BeatML.supported());
+let MLC = null, MLA = null, MLSAVED = null, MLSTATE = '', MLPROG = 0, MLTOKEN = 0, MLBUSY = false;
+const LV = { seg: -1, segs: new Map(), pend: [], pendLen: 0, sr: 0, lastEnd: null, newSec: 0, total: 0 };
+function mlClient() { if (!MLC) MLC = BeatML.create(); return MLC; }
+function lvReset() { LV.seg = -1; LV.segs.clear(); LV.pend = []; LV.pendLen = 0; LV.sr = 0; LV.lastEnd = null; LV.newSec = 0; LV.total = 0; }
+PR.mlFile = async (mono, sr, dur) => {
+  if (!ML_OK) return;
+  const token = ++MLTOKEN; MLSTATE = 'loading'; MLPROG = 0; PR.sync();
+  try {
+    const cl = mlClient(); await cl.load(); if (token !== MLTOKEN) return;
+    MLSTATE = 'running'; PR.sync();
+    const r = await BeatML.analyzeBuffer(cl, mono, sr, p => { if (token === MLTOKEN) { MLPROG = p; PR.sync(); } });
+    if (token !== MLTOKEN) return;
+    MLA = { beats: r.beats, downs: r.downs, heard: dur }; MLSTATE = 'done'; GRID = null;
+  } catch (e) { if (token === MLTOKEN) MLSTATE = 'error'; console.warn('Tonality : analyse IA des temps impossible', e); }
+  PR.sync();
+};
+function mlFlush() {
+  if (!LV.pendLen) return;
+  const a = new Float32Array(LV.pendLen); let o = 0; for (const c of LV.pend) { a.set(c, o); o += c.length; }
+  LV.pend = []; LV.pendLen = 0;
+  mlClient().append(LV.seg, a, LV.sr).catch(() => { });
+}
+function mlPush(chunk, t0, rate, sr) {
+  if (!ML_OK) return;
+  // un saut dans la chanson (retour en arrière déjà filtré, saut avant, changement de fréquence) : nouveau segment
+  if (LV.lastEnd == null || Math.abs(t0 - LV.lastEnd) > 0.25 || sr !== LV.sr) {
+    mlFlush(); LV.seg++; LV.sr = sr; LV.segs.set(LV.seg, { pieces: [], a: 0 });
+  }
+  const sg = LV.segs.get(LV.seg), len = chunk.length / sr;
+  const last = sg.pieces[sg.pieces.length - 1];
+  const pred = last ? last.t + (sg.a - last.a) * last.rate : null;
+  if (!last || last.rate !== rate || Math.abs(pred - t0) > 0.02) sg.pieces.push({ a: sg.a, t: t0, rate });
+  sg.a += len; LV.lastEnd = t0 + len * rate;
+  LV.pend.push(new Float32Array(chunk)); LV.pendLen += chunk.length; LV.newSec += len; LV.total += len;
+  if (LV.pendLen >= sr) mlFlush();
+}
+function audioToMedia(sg, x) { let p = sg.pieces[0]; for (const q of sg.pieces) { if (q.a <= x) p = q; else break; } return p.t + (x - p.a) * p.rate; }
+async function mlLive() {
+  if (!ML_OK || MLBUSY || LV.total < 12 || LV.newSec < 8) return;
+  MLBUSY = true; LV.newSec = 0; mlFlush();
+  const token = MLTOKEN;
+  try {
+    if (!MLA) { MLSTATE = 'loading'; PR.sync(); }
+    await mlClient().load(); if (token !== MLTOKEN) return;
+    if (!MLA) { MLSTATE = 'running'; PR.sync(); }
+    const res = await mlClient().analyze({});
+    if (token !== MLTOKEN) return;
+    let beats = [], downs = [];
+    for (const [k, r] of Object.entries(res)) { const sg = LV.segs.get(+k); if (!sg || !sg.pieces.length) continue; beats = beats.concat(r.beats.map(x => audioToMedia(sg, x))); downs = downs.concat(r.downs.map(x => audioToMedia(sg, x))); }
+    const dedupe = a => { a.sort((x, y) => x - y); const o = []; for (const t of a) if (!o.length || t - o[o.length - 1] > 0.08) o.push(t); return o; };
+    MLA = { beats: dedupe(beats), downs: dedupe(downs), heard: LV.total }; MLSTATE = 'done'; GRID = null;
+  } catch (e) { if (token === MLTOKEN) MLSTATE = 'error'; console.warn('Tonality : analyse IA des temps impossible', e); }
+  finally { MLBUSY = false; }
+  PR.sync();
+}
+PR.reset = () => {
+  TT = null; TANA = null; TSAVED = null; MANUAL = null; MULT = 1; METER = null; DBT = null; GRID = null; SCHED.clear(); COUNTING = false; TAPS.length = 0;
+  MLTOKEN++; MLA = null; MLSAVED = null; MLSTATE = ''; MLPROG = 0; MLBUSY = false; lvReset(); if (MLC) MLC.reset().catch(() => { });
+  PR.sync();
+};
 PR.newTracker = sr => new TP.Tracker(sr);
 PR.setAnalysis = (r, heard) => { if (r) { TANA = r; TANA.heard = heard; } GRID = null; PR.sync(); };
-PR.push = (chunk, t0, rate, sr) => { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); };
-PR.live = () => { if (!TT || TT.frames.length < 300) return; const r = TT.analyze(); if (r) { TANA = r; TANA.heard = TT.heard; GRID = null; PR.sync(); } };
+PR.push = (chunk, t0, rate, sr) => { if (!TT || TT.sr !== sr) TT = new TP.Tracker(sr); TT.push(chunk, t0, rate); mlPush(chunk, t0, rate, sr); };
+PR.live = () => { mlLive(); if (!TT || TT.frames.length < 300) return; const r = TT.analyze(); if (r) { TANA = r; TANA.heard = TT.heard; GRID = null; PR.sync(); } };
 PR.save = () => {
   const a = shownTempo();
   return {
     tempo: a ? { bpm: Math.round(a.bpm * 10) / 10, beats: a.beats.map(x => Math.round(x * 100) / 100), d4: a.downbeat4, d3: a.downbeat3, mg: a.meterGuess, heard: Math.round((a.heard || 0) * 10) / 10 } : null,
+    ml: (() => { const m = mlTempo(); return m ? { beats: m.beats.map(x => Math.round(x * 100) / 100), downs: m.downs.map(x => Math.round(x * 100) / 100), heard: Math.round((m.heard || 0) * 10) / 10 } : null; })(),
     manual: MANUAL, mult: MULT, meter: METER, dbt: DBT
   };
 };
 PR.load = p => {
   p = p || {};
   TSAVED = p.tempo ? { bpm: p.tempo.bpm, beats: p.tempo.beats, downbeat4: p.tempo.d4, downbeat3: p.tempo.d3, meterGuess: p.tempo.mg, heard: p.tempo.heard } : null;
+  MLSAVED = p.ml && p.ml.beats && p.ml.beats.length ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0 } : null;
   MANUAL = p.manual || null; MULT = p.mult || 1; METER = p.meter || null; DBT = p.dbt != null ? p.dbt : null; GRID = null; PR.sync();
 };
+function mlTempo() {
+  if (MLSAVED && (!MLA || (MLA.heard || 0) < (MLSAVED.heard || 0) * 0.9)) return MLSAVED;
+  return MLA;
+}
 function shownTempo() {
   if (TSAVED && (!TANA || (TANA.heard || 0) < (TSAVED.heard || 0) * 0.9)) return TSAVED;
   return TANA;
@@ -46,42 +114,81 @@ function shownTempo() {
 /* ---------- grille des temps ---------- */
 let GRID = null, GRIDKEY = '';
 const median = a => { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
+// temps manquants (passage doux, silence) : on les complète si l'écart vaut un nombre entier de temps
+function fillGaps(b) {
+  if (b.length < 3) return b.slice();
+  const d = []; for (let i = 1; i < b.length; i++) d.push(b[i] - b[i - 1]);
+  const p = median(d), out = [b[0]];
+  for (let i = 1; i < b.length; i++) {
+    const gap = b[i] - b[i - 1], n = Math.round(gap / p);
+    if (n >= 2 && n <= 16 && Math.abs(gap / n - p) < 0.25 * p) for (let k = 1; k < n; k++) out.push(b[i - 1] + k * gap / n);
+    out.push(b[i]);
+  }
+  return out;
+}
 function grid() {
-  const a = shownTempo();
-  const songEnd = Math.max(P.dur() || 0, a ? a.beats[a.beats.length - 1] + 1 : 0, 30);
-  const key = [a ? a.beats.length + ':' + a.beats[0] + ':' + (a.heard || 0) : '-', MANUAL ? MANUAL.period + ':' + MANUAL.anchor : '', MULT, METER, DBT, Math.round(songEnd)].join('|');
+  const ml = MANUAL ? null : mlTempo(), a = shownTempo();
+  const lastKnown = ml && ml.beats.length ? ml.beats[ml.beats.length - 1] : a ? a.beats[a.beats.length - 1] : 0;
+  const songEnd = Math.max(P.dur() || 0, lastKnown + 1, 30);
+  const key = [ml ? 'ml' + ml.beats.length + ':' + ml.downs.length + ':' + ml.beats[0] + ':' + (ml.heard || 0) : '', a ? a.beats.length + ':' + a.beats[0] + ':' + (a.heard || 0) : '-', MANUAL ? MANUAL.period + ':' + MANUAL.anchor : '', MULT, METER, DBT, Math.round(songEnd)].join('|');
   if (GRID && key === GRIDKEY) return GRID;
   GRIDKEY = key; GRID = null;
+  const useML = !!(ml && ml.beats.length >= 8);
   let beats;
   if (MANUAL) {
     const p = MANUAL.period, k0 = Math.ceil(-MANUAL.anchor / p), k1 = Math.floor((songEnd + 30 - MANUAL.anchor) / p);
     beats = []; for (let k = k0; k <= k1; k++) beats.push(MANUAL.anchor + k * p);
   } else {
-    if (!a || !a.beats || a.beats.length < 4) return null;
-    beats = a.beats.slice();
+    const src = useML ? fillGaps(ml.beats) : (a && a.beats && a.beats.length >= 4 ? a.beats.slice() : null);
+    if (!src) return null;
+    beats = src;
     const d = []; for (let i = 1; i < beats.length; i++) d.push(beats[i] - beats[i - 1]);
     const p0 = median(d.slice(0, 8)), p1 = median(d.slice(-8));
     while (beats[0] - p0 > 0) beats.unshift(beats[0] - p0);
     // au-delà de ce qui a été entendu : on continue au même tempo (utile pendant la première écoute)
     while (beats[beats.length - 1] + p1 < songEnd + 30) beats.push(beats[beats.length - 1] + p1);
   }
-  // premier temps (avant ×2 / ÷2)
-  const meterGuess = (!MANUAL && a && a.meterGuess) || 4;
-  const meter = METER || meterGuess;
-  let dbTime = DBT;
-  if (dbTime == null) {
-    if (!MANUAL && a) { const idx = meter === 3 ? a.downbeat3 : a.downbeat4; dbTime = a.beats[Math.min(a.beats.length - 1, idx || 0)]; }
-    else dbTime = beats[0];
-  }
   const nearest = (arr, t) => { let lo = 0, hi = arr.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (arr[m] <= t) lo = m; else hi = m; } return Math.abs(arr[lo] - t) <= Math.abs(arr[hi] - t) ? lo : hi; };
-  if (MULT === 2) { const o = []; for (let i = 0; i < beats.length; i++) { o.push(beats[i]); if (i + 1 < beats.length) o.push((beats[i] + beats[i + 1]) / 2); } beats = o; }
-  else if (MULT === 0.5) { const par = nearest(beats, dbTime) % 2; beats = beats.filter((_, i) => i % 2 === par); }
-  const down = ((nearest(beats, dbTime) % meter) + meter) % meter;
+  // premiers temps trouvés par l'IA, et mesure : nombre de temps le plus fréquent entre deux premiers temps
+  let isD = null, mlMeter = null;
+  if (useML && ml.downs.length >= 2) {
+    isD = new Uint8Array(beats.length);
+    for (const t of ml.downs) { const i = nearest(beats, t); if (Math.abs(beats[i] - t) < 0.07) isD[i] = 1; }
+    const cnt = {}; let last = -1;
+    for (let i = 0; i < beats.length; i++) if (isD[i]) { if (last >= 0) { const n = i - last; if (n >= 2 && n <= 7) cnt[n] = (cnt[n] || 0) + 1; } last = i; }
+    let best = 0; for (const [n, c] of Object.entries(cnt)) if (c > best) { best = c; mlMeter = +n; }
+  }
+  const meter = METER || mlMeter || (!MANUAL && a && a.meterGuess) || 4;
+  let pos = null, down = 0;
+  if (isD && mlMeter && !METER && DBT == null && MULT === 1) {
+    // position dans la mesure en suivant les vrais premiers temps (mesures irrégulières comprises)
+    pos = new Int8Array(beats.length);
+    const f = isD.indexOf(1);
+    for (let i = f; i < beats.length; i++) {
+      if (i === f) { pos[i] = 0; continue; }
+      const nx = (pos[i - 1] + 1) % meter;
+      pos[i] = isD[i] && pos[i - 1] >= 1 ? 0 : nx;
+    }
+    for (let i = f - 1; i >= 0; i--) pos[i] = ((pos[i + 1] - 1) % meter + meter) % meter;
+    down = f;
+  } else {
+    let dbTime = DBT;
+    if (dbTime == null) {
+      if (useML && ml.downs.length) dbTime = ml.downs[0];
+      else if (!MANUAL && a) { const idx = meter === 3 ? a.downbeat3 : a.downbeat4; dbTime = a.beats[Math.min(a.beats.length - 1, idx || 0)]; }
+      else dbTime = beats[0];
+    }
+    if (MULT === 2) { const o = []; for (let i = 0; i < beats.length; i++) { o.push(beats[i]); if (i + 1 < beats.length) o.push((beats[i] + beats[i + 1]) / 2); } beats = o; }
+    else if (MULT === 0.5) { const par = nearest(beats, dbTime) % 2; beats = beats.filter((_, i) => i % 2 === par); }
+    down = ((nearest(beats, dbTime) % meter) + meter) % meter;
+  }
   const dd = []; for (let i = 1; i < Math.min(beats.length, 400); i++) dd.push(beats[i] - beats[i - 1]);
-  GRID = { beats, meter, down, period: median(dd), source: MANUAL ? 'tap' : (a === TSAVED ? 'saved' : 'detect') };
+  const source = MANUAL ? 'tap' : useML ? (ml === MLSAVED ? 'saved' : 'ml') : (a === TSAVED ? 'saved' : 'detect');
+  GRID = { beats, meter, down, pos, period: median(dd), source };
   return GRID;
 }
-const isDown = (g, i) => ((i - g.down) % g.meter + g.meter) % g.meter === 0;
+const posOf = (g, i) => g.pos && i >= 0 && i < g.pos.length ? g.pos[i] : ((i - g.down) % g.meter + g.meter) % g.meter;
+const isDown = (g, i) => posOf(g, i) === 0;
 function idxAt(g, t) { // dernier temps <= t
   const b = g.beats; if (t < b[0]) return -1;
   let lo = 0, hi = b.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (b[m] <= t) lo = m; else hi = m; }
@@ -221,7 +328,7 @@ function visLoop() {
   const out = clickOut(), rate = rateNow(), mt = mediaNow(); if (mt == null) return;
   const heard = mt - ((out ? out.delay : 0) + MET.offset / 1000) * rate;
   const i = idxAt(g, heard);
-  lightBeat(i < 0 ? -1 : ((i - g.down) % g.meter + g.meter) % g.meter);
+  lightBeat(i < 0 ? -1 : posOf(g, i));
 }
 requestAnimationFrame(visLoop);
 
@@ -251,7 +358,7 @@ function loopBars(n) {
   const tNow = P.time() || 0;
   const st = A != null ? barStartAt(snapTo(A, 'bar') + 0.01) : barStartAt(tNow);
   if (!st) return;
-  const j = st.i + n * g.meter; if (j >= g.beats.length) return;
+  let j = st.i, c = 0; while (c < n && j < g.beats.length - 1) { j++; if (isDown(g, j)) c++; } if (c < n) return;
   A = st.t; B = g.beats[j]; LOOP = true; DIRTY = true;
   syncControls(); renderKeys();
   const t = P.time(); if (t != null && (t < A || t > B)) P.seek(A);
@@ -283,7 +390,9 @@ PR.sync = () => {
   if (g) {
     const bpm = 60 / g.period;
     $('m-bpm').textContent = Math.round(bpm * rate);
-    const src = g.source === 'tap' ? 'tempo tapé' : g.source === 'saved' ? 'tempo enregistré' : (LIVE ? 'tempo détecté (se précise pendant l\'écoute)' : 'tempo détecté');
+    const src = g.source === 'tap' ? 'tempo tapé' : g.source === 'saved' ? 'tempo enregistré'
+      : g.source === 'ml' ? (LIVE ? 'temps trouvés par l\'IA (se précisent pendant l\'écoute)' : 'temps et mesures trouvés par l\'IA')
+      : (MLSTATE === 'loading' ? 'aperçu · chargement de l\'analyse IA des temps…' : MLSTATE === 'running' ? `aperçu · analyse IA des temps… ${Math.round(MLPROG * 100)} %` : LIVE ? 'tempo détecté (se précise pendant l\'écoute)' : 'tempo détecté');
     $('m-bpm-s').textContent = Math.abs(rate - 1) > 0.001 ? `Tempo original : ${Math.round(bpm)} BPM · vitesse ${Math.round(rate * 100)} % · ${src}` : `Tempo original · ${src}`;
   } else {
     $('m-bpm').textContent = '—';
@@ -308,7 +417,8 @@ PR.sync = () => {
   if (A != null && B != null && B > A) {
     if (g) {
       const ia = idxAt(g, A + 0.02), ib = idxAt(g, B + 0.02), nb = ib - ia;
-      info = nb > 0 && nb % g.meter === 0 && isDown(g, ia) ? `${nb / g.meter} ${nb / g.meter > 1 ? 'mesures' : 'mesure'} · ` : nb > 0 ? `${nb} ${nb > 1 ? 'temps' : 'temps'} · ` : '';
+      let bars = 0; for (let k = ia; k < ib; k++) if (isDown(g, k)) bars++;
+      info = nb > 0 && isDown(g, ia) && isDown(g, ib) && bars > 0 ? `${bars} ${bars > 1 ? 'mesures' : 'mesure'} · ` : nb > 0 ? `${nb} temps · ` : '';
     }
     const len = B - A; info += len >= 60 ? fmtT1(len) : len.toFixed(1).replace('.', ',') + ' s';
   }
