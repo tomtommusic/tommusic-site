@@ -348,6 +348,45 @@ body.qbar-on main{padding-bottom:110px}
 @keyframes tp{from{transform:scale(.93);background:var(--accent-hi);color:#fff}to{transform:none}}
 .tempo .lab{min-width:74px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== Habillage inspiré de la maquette (couleurs menthe, titres forts, cartes douces) ===== */
+:root{--teal:#14a383;--deep:#0b4d3c;--line:#d8ebe3;--bg:#f2f9f6}
+body{background:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath d='M0 220 C300 140 520 300 820 220 S1260 120 1440 180 V320 H0Z' fill='%23d9f0e6' opacity='.7'/%3E%3Cpath d='M0 260 C340 200 600 320 900 260 S1300 190 1440 230 V320 H0Z' fill='%23c8e9dc' opacity='.6'/%3E%3C/svg%3E") bottom/100% 260px no-repeat fixed,
+  radial-gradient(1000px 520px at 85% -10%, #cdeee0 0%, transparent 62%) fixed,
+  radial-gradient(700px 500px at -10% 110%, #dcf2e8 0%, transparent 60%) fixed, var(--bg)}
+.side{background:linear-gradient(180deg,#fbfefc 0%,#f1faf6 100%)}
+.side::after{display:none}
+.side-wave{position:absolute;left:14px;right:14px;bottom:26px;width:calc(100% - 28px);height:auto;pointer-events:none;opacity:.85}
+.tab{border-radius:14px;padding:12px 16px}
+.tab[aria-current="page"]{background:#d6f1e5;color:var(--deep);box-shadow:inset 0 0 0 1px #bfe6d5}
+.tab[aria-current="page"]::before{display:none}
+.toplinks{margin:-16px auto 18px;gap:10px}
+.toplinks a{background:#fff;border:1px solid var(--line);box-shadow:0 8px 20px -16px rgba(6,70,50,.45);color:var(--ink);padding:8px 15px}
+.toplinks a:hover{border-color:var(--line-hi);color:var(--deep)}
+.head{position:relative;min-height:210px;align-items:center;padding:8px 0 6px}
+.head > div{position:relative;z-index:1;max-width:min(640px,62%)}
+.head h1{font-size:clamp(34px,4.6vw,56px);letter-spacing:-.035em;line-height:1.02}
+.head h1 b{display:block;color:#0e9473}
+.head p{font-size:16.5px;color:#2f4a3e;margin-top:14px;line-height:1.55}
+.head > div::after{content:"";display:block;width:84px;height:4px;border-radius:4px;background:var(--teal);margin-top:16px}
+.hero-art{position:absolute;right:-10px;top:-6px;width:min(560px,52%);height:auto;pointer-events:none}
+@media (max-width:900px){ .hero-art{opacity:.35;width:80%} .head > div{max-width:none} .head{min-height:0} }
+.pill{border-radius:20px;border-color:var(--line);box-shadow:0 16px 36px -26px rgba(6,70,50,.5)}
+.round{background:var(--deep)}
+.round:hover{background:#083a2d}
+.card{border-radius:22px;border-color:#e1efe8;padding:20px 22px;box-shadow:0 22px 46px -34px rgba(6,70,50,.45),0 2px 6px -4px rgba(6,70,50,.12)}
+.label{font-size:17px;text-transform:none;letter-spacing:-.01em;color:var(--ink);font-weight:800}
+.btn{border-radius:999px}
+.btn.primary{background:var(--deep);border-color:var(--deep)}
+.btn.primary:hover{background:#083a2d}
+.ana #m-analyze{background:var(--deep);border-color:var(--deep)}
+.btn[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--deep)}
+input[type="range"]{accent-color:var(--teal)}
+.empty-k,.empty-b{border-radius:16px;border-color:#b9ddcd;background:#fbfefc}
+details.adv{border-radius:16px;background:#fbfefc}
+.howto{border-radius:14px}
+.promo{border-radius:24px;background:linear-gradient(120deg,#0b4d3c,#14a383)}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -384,6 +423,8 @@ body.qbar-on main{padding-bottom:110px}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
         <span class="t">Librairie</span><span class="count" id="lib-count">0</span></button>
     </nav>
+    <svg class="side-wave" viewBox="0 0 180 170" aria-hidden="true" focusable="false"><defs><linearGradient id="sw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14a383" stop-opacity=".75"/><stop offset="1" stop-color="#14a383" stop-opacity=".1"/></linearGradient></defs>
+      <g fill="url(#sw)"><rect x="6" y="70" width="9" height="60" rx="4.5"/><rect x="24" y="50" width="9" height="90" rx="4.5"/><rect x="42" y="30" width="9" height="120" rx="4.5"/><rect x="60" y="56" width="9" height="78" rx="4.5"/><rect x="78" y="8" width="9" height="160" rx="4.5"/><rect x="96" y="40" width="9" height="110" rx="4.5"/><rect x="114" y="62" width="9" height="70" rx="4.5"/><rect x="132" y="78" width="9" height="44" rx="4.5"/><rect x="150" y="70" width="9" height="56" rx="4.5"/></g></svg>
   </aside>
 
   <main>
@@ -397,6 +438,26 @@ body.qbar-on main{padding-bottom:110px}
     <!-- ================= ÉCOUTER ================= -->
     <section class="view" id="v-ec" aria-labelledby="h-ec">
       <div class="head">
+        <svg class="hero-art" viewBox="0 0 560 230" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="hg" x1="0" x2="1"><stop offset="0" stop-color="#14a383" stop-opacity="0"/><stop offset=".25" stop-color="#14a383" stop-opacity=".55"/><stop offset="1" stop-color="#14a383" stop-opacity=".25"/></linearGradient>
+            <g id="hn"><ellipse cx="0" cy="0" rx="9" ry="6.5" transform="rotate(-22)"/><rect x="7" y="-46" width="3" height="46" rx="1.5"/></g>
+            <g id="hn2"><ellipse cx="0" cy="0" rx="9" ry="6.5" transform="rotate(-22)"/><ellipse cx="34" cy="-8" rx="9" ry="6.5" transform="rotate(-22 34 -8)"/><rect x="7" y="-50" width="3" height="50" rx="1.5"/><rect x="41" y="-58" width="3" height="50" rx="1.5"/><path d="M8.5 -50 L42.5 -58 L42.5 -49 L8.5 -41 Z"/></g>
+          </defs>
+          <g fill="none" stroke="url(#hg)" stroke-width="1.6">
+            <path d="M0 150 C120 60 260 170 380 90 S520 40 560 20"/><path d="M0 162 C120 72 260 182 380 102 S520 52 560 32"/>
+            <path d="M0 174 C120 84 260 194 380 114 S520 64 560 44"/><path d="M0 186 C120 96 260 206 380 126 S520 76 560 56"/>
+            <path d="M0 198 C120 108 260 218 380 138 S520 88 560 68"/>
+          </g>
+          <g fill="#14a383">
+            <use href="#hn2" x="120" y="150" opacity=".55"/><use href="#hn" x="222" y="152" opacity=".45"/>
+            <use href="#hn2" x="300" y="138" opacity=".7"/><use href="#hn" x="410" y="104" opacity=".6"/>
+            <use href="#hn2" x="470" y="70" opacity=".5"/><use href="#hn" x="60" y="118" opacity=".3"/>
+          </g>
+          <g fill="#0b5e47" opacity=".9" transform="translate(470 170)">
+            <rect x="0" y="-18" width="5" height="36" rx="2.5"/><rect x="10" y="-30" width="5" height="60" rx="2.5"/><rect x="20" y="-12" width="5" height="24" rx="2.5"/><rect x="30" y="-40" width="5" height="80" rx="2.5"/><rect x="40" y="-22" width="5" height="44" rx="2.5"/><rect x="50" y="-8" width="5" height="16" rx="2.5"/>
+          </g>
+        </svg>
         <div>
           <h1 id="h-ec">Transposer une chanson <b>en temps réel</b></h1>
           <p>Colle un lien YouTube ou ouvre un fichier audio ou vidéo. Monte ou descends la chanson d'autant de demi-tons que tu veux, sans changer le tempo. Tonality te donne aussi la tonalité de départ et les modulations.</p>
