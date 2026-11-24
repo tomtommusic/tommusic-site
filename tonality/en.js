@@ -110,7 +110,7 @@ t:{
 "Tes notes ou tes réglages pour cette chanson ne sont pas enregistrés. Continuer quand même?":"Your notes or settings for this song aren't saved. Continue anyway?",
 "Ce lien ne ressemble pas à une vidéo YouTube. Pour un autre site, utilise « Transposer un autre onglet ».":"This link doesn't look like a YouTube video. For another site, use “Transpose another tab”.",
 "Le point B doit venir après le point A.":"Point B must come after point A.","Ligne du temps des tonalités :":"Key timeline:",
-"🔁 Boucle A-B":"🔁 A-B loop","🔁 Boucle et vitesse":"🔁 Loop and speed","Aimanter aux":"Snap to","Non":"Off","Temps":"Beats","Mesures":"Bars","Aimanter la boucle":"Snap the loop",
+"🔁 Boucle A-B":"🔁 A-B loop","🔁 Boucle et vitesse":"🔁 Loop and speed","🔁 Boucle, vitesse et métronome":"🔁 Loop, speed and metronome","Aimanter aux":"Snap to","Non":"Off","Temps":"Beats","Mesures":"Bars","Aimanter la boucle":"Snap the loop",
 "Boucle de":"Loop","mesures":"bars","Boucle d'un nombre de mesures":"Loop a number of bars",
 "Décompte d'une mesure avant chaque reprise de la boucle":"One-bar count-in before each loop repeat",
 "🥁 Métronome":"🥁 Metronome","Activer le métronome":"Turn on the metronome","Métronome activé":"Metronome on",

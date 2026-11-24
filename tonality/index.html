@@ -423,6 +423,16 @@ details.adv{border-radius:16px;background:#fbfefc}
 .toprow .stage .transport{margin-top:auto}
 .tpcol{grid-template-rows:auto 1fr}
 #fiche-card{justify-content:space-between}
+/* métronome intégré à la carte de boucle */
+.metro-sec{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.metro-sec h3{margin:0;font-size:15px}
+.metro-sec .cardhead h3{margin-right:auto}
+.metro-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.metro-l,.metro-r{display:grid;gap:12px;min-width:0}
+.metro-r .sub.fixes{border-top:0;padding-top:0}
+.rest{grid-template-columns:minmax(0,1fr)}
+.rest .col{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
+@media (max-width:980px){ .metro-body,.rest .col{grid-template-columns:minmax(0,1fr)} }
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -621,7 +631,7 @@ details.adv{border-radius:16px;background:#fbfefc}
       <!-- ===== Boucle, vitesse et mesures ===== -->
       <div class="tools" id="practice" hidden>
         <div class="card" id="loop-card">
-          <div class="cardhead"><p class="label">🔁 Boucle et vitesse</p><span class="note" id="loop-info"></span></div>
+          <div class="cardhead"><p class="label">🔁 Boucle, vitesse et métronome</p><span class="note" id="loop-info"></span></div>
           <div class="loop-body">
             <div class="loop-ctrl">
           <div class="sub speed">
@@ -671,14 +681,10 @@ details.adv{border-radius:16px;background:#fbfefc}
         <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
       </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ===== Le reste ===== -->
-      <div class="rest">
-        <div class="col">
-        <div class="card" id="metro-card">
-          <div class="cardhead"><p class="label">🥁 Métronome</p><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
+          <div class="metro-sec" id="metro-card">
+            <div class="cardhead"><h3>🥁 Métronome</h3><button class="btn small" type="button" id="m-on" aria-pressed="false">Activer le métronome</button></div>
+            <div class="metro-body">
+              <div class="metro-l">
           <div class="ana" id="m-ana">
             <div class="toolbar"><button class="btn" type="button" id="m-analyze" hidden>🔍 Analyser le tempo</button><button class="btn small" type="button" id="m-keep" hidden>🔒 Garder ce tempo</button></div>
             <div class="prog" id="m-prog" hidden><div class="pbar"><i id="m-prog-i"></i></div><span class="pt" id="m-prog-t"></span><button class="btn small" type="button" id="m-cancel" hidden>Arrêter</button></div>
@@ -689,6 +695,8 @@ details.adv{border-radius:16px;background:#fbfefc}
             <div class="beats" id="m-beats" aria-hidden="true"></div>
             <div class="bpm"><div><b id="m-bpm">—</b> <span>BPM</span></div><div class="note" id="m-bpm-s"></div></div>
           </div>
+              </div>
+              <div class="metro-r">
           <div class="sub fixes">
             <h3>Ça ne colle pas ? Corrige :</h3>
             <div class="row2"><span class="lab">Le « 1 »</span>
@@ -724,8 +732,14 @@ details.adv{border-radius:16px;background:#fbfefc}
               <p class="note">Si les clics arrivent un peu avant ou après les temps de la chanson, déplace le décalage (négatif = plus tôt).</p>
             </div>
           </details>
+              </div>
+            </div>
+          </div>
         </div>
-        </div>
+      </div>
+
+      <!-- ===== Le reste ===== -->
+      <div class="rest">
         <div class="col">
           <div class="card" id="keys-card">
             <div class="cardhead"><p class="label">Tonalité et modulations</p><span class="note" id="an-state"></span></div>
@@ -801,7 +815,7 @@ details.adv{border-radius:16px;background:#fbfefc}
   </main>
 </div>
 
-<script src="en.js?v=9"></script>
+<script src="en.js?v=10"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
