@@ -5,6 +5,7 @@
 const TP = window.TonalityTempo;
 const PR = window.PR = {};
 PR._grid = () => grid();
+PR._stab = () => ({ dbg: STAB.dbg, n: STAB.n, sig: STAB.sig, busy: MLBUSY, st: MLSTATE, ns: LV.newSec, lock: !!MLLOCK, mla: MLA && MLA.beats.length });
 PR._t = { fresh: () => { MLTOKEN++; MLA = null; MLLOCK = null; REF = null; MLBUSY = false; lvReset(); changed(); return MLC ? MLC.reset() : null; }, run: () => { RUN = { kind: "yt", prev: null }; }, finish: () => finishRun(), raw: () => rawTempo() };
 
 /* ---------- état ---------- */
@@ -35,7 +36,10 @@ const COV = [];     // portions de la chanson déjà entendues par l'analyse [[a
 // téléchargement du modèle (une seule fois) : progression
 let DLP = null;
 const onDl = p => { DLP = p; PR.sync(); };
-function mlClient() { if (!MLC) MLC = BeatML.create(); return MLC; }
+// deux analyseurs : le petit (rapide) suit l'écoute en direct; le grand (précis) fait l'analyse qui verrouille
+let MLB = null;
+function mlClient() { if (!MLC) MLC = BeatML.create({ model: 'vendor/beatthis/beatthis_small0_int8.onnx.gz' }); return MLC; }
+function bigClient() { if (!MLB) MLB = BeatML.create(); return MLB; }
 function lvReset() { LV.seg = -1; LV.segs.clear(); LV.pend = []; LV.pendLen = 0; LV.sr = 0; LV.lastEnd = null; LV.newSec = 0; LV.total = 0; COV.length = 0; }
 function covAdd(a, b) {
   COV.push([a, b]); COV.sort((x, y) => x[0] - y[0]);
@@ -50,7 +54,7 @@ PR.mlFile = async (mono, sr, dur) => {
   if (!ML_OK || MLLOCK) return;
   const token = ++MLTOKEN; MLSTATE = 'loading'; MLPROG = 0; RUN = { kind: 'file' }; PR.sync();
   try {
-    const cl = mlClient(); await cl.load(onDl); DLP = null; if (token !== MLTOKEN) return;
+    const cl = bigClient(); await cl.load(onDl); DLP = null; if (token !== MLTOKEN) return;
     MLSTATE = 'running'; PR.sync();
     const r = await BeatML.analyzeBuffer(cl, mono, sr, p => { if (token === MLTOKEN) { MLPROG = p; PR.sync(); } });
     if (token !== MLTOKEN) return;
@@ -63,10 +67,11 @@ function mlFlush() {
   if (!LV.pendLen) return;
   const a = new Float32Array(LV.pendLen); let o = 0; for (const c of LV.pend) { a.set(c, o); o += c.length; }
   LV.pend = []; LV.pendLen = 0;
-  mlClient().append(LV.seg, a, LV.sr).catch(() => { });
+  mlClient().append(LV.seg, a.slice(), LV.sr).catch(() => { });
+  bigClient().append(LV.seg, a, LV.sr).catch(() => { });
 }
 function mlPush(chunk, t0, rate, sr) {
-  if (!ML_OK || MLLOCK) return;
+  if (!ML_OK || (MLLOCK && !MLLOCK.partial)) return;   // grille partielle : on continue d'écouter pour la vérifier à la fin
   // l'IA reconnaît mal les temps d'un son ralenti ou accéléré : on n'écoute qu'à vitesse normale
   if (Math.abs(rate - 1) > 0.02) { LV.lastEnd = null; return; }
   if (covHas(t0, t0 + chunk.length / sr * rate)) { LV.lastEnd = null; return; }   // déjà entendu (boucle, retour en arrière)
@@ -83,25 +88,47 @@ function mlPush(chunk, t0, rate, sr) {
   sg.a += len; LV.lastEnd = t0 + len * rate; covAdd(t0, LV.lastEnd);
   LV.pend.push(new Float32Array(chunk)); LV.pendLen += chunk.length; LV.newSec += len; LV.total += len;
   if (LV.pendLen >= sr) mlFlush();
+  if (!PRELOAD) { PRELOAD = true; bigClient().load(onDl).then(() => { DLP = null; PR.sync(); }).catch(() => { }); }
 }
+let PRELOAD = false;
 function audioToMedia(sg, x) { let p = sg.pieces[0]; for (const q of sg.pieces) { if (q.a <= x) p = q; else break; } return p.t + (p.fix || 0) + (x - p.a) * p.rate; }
-async function mlRun(final) {
-  const token = MLTOKEN;
+async function mlRun(final, big) {
+  const token = MLTOKEN, cl = big ? bigClient() : mlClient();
   if (!MLA) { MLSTATE = 'loading'; PR.sync(); }
-  await mlClient().load(onDl); DLP = null; if (token !== MLTOKEN) return null;
+  await cl.load(big ? onDl : undefined); if (big) DLP = null; if (token !== MLTOKEN) return null;
   if (!MLA) { MLSTATE = 'running'; PR.sync(); }
   mlFlush();
-  const res = await mlClient().analyze(final ? { final: true } : {});
+  const heardAt = LV.total, covAt = covered();
+  const res = await cl.analyze(final ? { final: true } : {});
   if (token !== MLTOKEN) return null;
   let beats = [], downs = [];
   for (const [k, r] of Object.entries(res)) { const sg = LV.segs.get(+k); if (!sg || !sg.pieces.length) continue; beats = beats.concat(r.beats.map(x => audioToMedia(sg, x))); downs = downs.concat(r.downs.map(x => audioToMedia(sg, x))); }
   const dedupe = a => { a.sort((x, y) => x - y); const o = []; for (const t of a) if (!o.length || t - o[o.length - 1] > 0.08) o.push(t); return o; };
-  return { beats: dedupe(beats), downs: dedupe(downs), heard: LV.total };
+  return { beats: dedupe(beats), downs: dedupe(downs), heard: heardAt, cov: covAt };
 }
+const STAB = { sig: null, n: 0 };
 async function mlLive(force) {
-  if (!ML_OK || MLLOCK || MLBUSY || LV.total < 12 || (!force && LV.newSec < 8)) return;
+  if (!ML_OK || (MLLOCK && !MLLOCK.partial) || MLBUSY || LV.total < 12 || (!force && LV.newSec < 8)) return;
   MLBUSY = true; LV.newSec = 0;
-  try { const r = await mlRun(false); if (r && r.beats.length >= 8) { MLA = r; MLSTATE = 'done'; changed(); } }
+  try {
+    const r = await mlRun(false);
+    if (r && r.beats.length >= 8) {
+      MLA = r; MLSTATE = 'done'; changed();
+      // verrouillage automatique : deux analyses de suite qui donnent la même grille, après assez d'écoute
+      const g = grid();
+      if (g && g.source === 'live' && !MLLOCK) {
+        const lastB = r.beats[r.beats.length - 1] - 0.5, downs = g.beats.filter((_, i) => g.pos[i] === 0 && g.beats[i] <= lastB);   // seulement ce qui a vraiment été analysé
+        const sig = { p: g.period, meter: g.meter, downs };
+        const prev = STAB.sig;
+        const same = prev && Math.abs(prev.p - sig.p) / sig.p < 0.01 && prev.meter === sig.meter &&
+          prev.downs.length >= 4 && prev.downs.filter(t => downs.some(u => Math.abs(u - t) < 0.06)).length >= prev.downs.length * 0.9;
+        if (prev) STAB.dbg = { dp: Math.abs(prev.p - sig.p) / sig.p, m: [prev.meter, sig.meter], match: prev.downs.filter(t => downs.some(u => Math.abs(u - t) < 0.06)).length, of: prev.downs.length, miss: prev.downs.filter(t => !downs.some(u => Math.abs(u - t) < 0.06)).slice(0, 4).map(t => +t.toFixed(2)) };
+        STAB.n = same ? STAB.n + 1 : 0; STAB.sig = sig;
+        STAB.runs = (STAB.runs || 0) + 1;
+        if ((STAB.n >= 1 || STAB.runs >= 3) && LV.total >= 45 && !RUN) { RUN = { kind: 'yt', prev: null, auto: true }; setTimeout(finishRun, 0); }
+      }
+    }
+  }
   catch (e) { MLSTATE = 'error'; console.warn('Tonality : analyse IA des temps impossible', e); }
   finally { MLBUSY = false; }
   PR.sync();
@@ -115,9 +142,10 @@ async function finishRun() {
   MLBUSY = true;
   let ok = false;
   try {
-    const r = LV.total > 5 ? await mlRun(true) : null;
+    const r = LV.total > 5 ? await mlRun(true, true) : null;
     const best = r && r.beats.length >= 8 ? r : MLA && MLA.beats.length >= 8 ? MLA : null;   // au pire, on garde la grille provisoire
-    if (best) { MLLOCK = Object.assign({}, best, { done: true }); MLA = best; MLSTATE = 'done'; changed(); DIRTY = true; ok = true; }
+    const dur = P.dur() || 0, partial = !!(dur > 30 && ((r && r.cov) != null ? r.cov : covered()) < dur * 0.95);
+    if (best) { MLLOCK = Object.assign({}, best, { done: true, partial }); MLA = best; MLSTATE = 'done'; changed(); DIRTY = true; ok = true; }
   } catch (e) { console.warn('Tonality : fin d\'analyse impossible', e); if (MLA && MLA.beats.length >= 8) { MLLOCK = Object.assign({}, MLA, { done: true }); changed(); DIRTY = true; ok = true; } }
   finally { MLBUSY = false; }
   if (!ok) { FINISH_FAIL = Date.now(); setStatus($('src-status'), 'L\'analyse du tempo n\'a pas entendu la chanson. Vérifie que le son transposé est activé (le niveau doit bouger), puis relance « Analyser le tempo ».', 'err'); }
@@ -127,8 +155,9 @@ async function finishRun() {
   PR.sync();
 }
 PR.reset = () => {
+  STAB.sig = null; STAB.n = 0; STAB.runs = 0;
   TT = null; TANA = null; TSAVED = null; MANUAL = null; MULT = 1; METER = null; ADJ = 0; GRID = null; SCHED.clear(); COUNTING = false; TAPS.length = 0;
-  MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLPROG = 0; MLBUSY = false; RUN = null; REF = null; lvReset(); changed(); if (MLC) MLC.reset().catch(() => { });
+  MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLPROG = 0; MLBUSY = false; RUN = null; REF = null; lvReset(); changed(); if (MLC) MLC.reset().catch(() => { }); if (MLB) MLB.reset().catch(() => { });
   SY.tr = null; SY.L0 = null; SY.corr = 0; SY.hist.length = 0;
   PR.sync();
 };
@@ -145,14 +174,14 @@ PR.save = () => {
   const m = MLLOCK || MLA, a = shownTempo();
   return {
     tempo: useDsp() && a ? { bpm: Math.round(a.bpm * 10) / 10, beats: a.beats.map(r2), d4: a.downbeat4, d3: a.downbeat3, mg: a.meterGuess, heard: Math.round((a.heard || 0) * 10) / 10 } : null,
-    ml: m ? { beats: m.beats.map(r2), downs: m.downs.map(r2), heard: Math.round((m.heard || 0) * 10) / 10, done: !!m.done } : null,
+    ml: m ? { beats: m.beats.map(r2), downs: m.downs.map(r2), heard: Math.round((m.heard || 0) * 10) / 10, done: !!m.done, partial: !!m.partial || undefined } : null,
     manual: MANUAL, mult: MULT, meter: METER, adj: ADJ
   };
 };
 PR.load = p => {
   p = p || {};
   TSAVED = p.tempo ? { bpm: p.tempo.bpm, beats: p.tempo.beats, downbeat4: p.tempo.d4, downbeat3: p.tempo.d3, meterGuess: p.tempo.mg, heard: p.tempo.heard } : null;
-  const m = p.ml && p.ml.beats && p.ml.beats.length >= 8 ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0, done: !!p.ml.done } : null;
+  const m = p.ml && p.ml.beats && p.ml.beats.length >= 8 ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0, done: !!p.ml.done, partial: !!p.ml.partial } : null;
   MLLOCK = m && m.done ? m : null; if (m && !m.done && !MLA) MLA = m;
   SY.corr = 0; SY.hist.length = 0;
   // plus de corrections manuelles : on se fie à l'analyse
@@ -164,6 +193,14 @@ function shownTempo() {
   return TANA;
 }
 function rawTempo() { // {beats, downs} de la meilleure source, ou null
+  if (MLLOCK && MLLOCK.partial && MLA && MLA.beats.length && MLLOCK.beats.length) {
+    // grille vérifiée par le grand modèle, puis ce que le petit modèle a entendu depuis
+    const end = MLLOCK.beats[MLLOCK.beats.length - 1] - 2.5;
+    if (MLA.beats[MLA.beats.length - 1] > end + 4) {
+      const cut = (a, b) => a.filter(t => t <= end).concat(b.filter(t => t > end + 0.1));
+      return { beats: cut(MLLOCK.beats, MLA.beats), downs: cut(MLLOCK.downs, MLA.downs), heard: MLA.heard, partial: true };
+    }
+  }
   if (MLLOCK) return MLLOCK;
   if (MLA) return MLA;
   if (useDsp()) {
@@ -228,11 +265,15 @@ function grid() {
     p = median(d);
     // garder la vitesse de pulsation déjà choisie (pas de passage soudain au double ou à la moitié)
     if (REF && !raw.done) { const q = p / REF.period; if (q > 1.7 && q < 2.3) p /= 2; else if (q > 0.43 && q < 0.6) p *= 2; }
-    beats = regularize(sameLevel(raw.beats, p), p);
-    // avant le premier temps entendu et au-delà du dernier : même tempo
-    const p0 = beats.length > 8 ? (beats[8] - beats[0]) / 8 : p, p1 = beats.length > 8 ? (beats[beats.length - 1] - beats[beats.length - 9]) / 8 : p;
-    let pre = 0; while (beats[0] - p0 > -0.001) { beats.unshift(beats[0] - p0); pre++; }
-    while (beats[beats.length - 1] + p1 < songEnd + 30) beats.push(beats[beats.length - 1] + p1);
+    const rb = raw.partial && raw.beats.length > 24 ? raw.beats.filter(t => t < raw.beats[raw.beats.length - 1] - 2.5) : raw.beats;   // fin d'une analyse partielle : moins fiable
+    beats = regularize(sameLevel(rb, p), p);
+    // avant le premier temps entendu et au-delà du dernier : même tempo (écart médian, position calée sur 16 temps)
+    const n = beats.length, med = (i0, i1) => { const dd = []; for (let i = Math.max(1, i0); i < i1; i++) dd.push(beats[i] - beats[i - 1]); return dd.length ? median(dd) : p; };
+    const pe = med(n - 64, n), ps = med(0, Math.min(n, 64));
+    const endAt = median(beats.slice(-16).map((t, k, arr) => t + (arr.length - 1 - k) * pe));
+    const startAt = median(beats.slice(0, 16).map((t, k) => t - k * ps));
+    const pre = []; for (let t = startAt - ps; t > -0.001; t -= ps) pre.unshift(t); beats = pre.concat(beats);
+    for (let k = 1; endAt + k * pe < songEnd + 30; k++) beats.push(endAt + k * pe);
     for (const t of raw.downs) { const i = nearestIdx(beats, t); if (Math.abs(beats[i] - t) < 0.12) downIdx.push(i); }
   }
   // mesure : nombre de temps le plus fréquent entre deux premiers temps
@@ -631,6 +672,7 @@ async function startAnalysis() {
   }
   MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLBUSY = false; REF = null; lvReset(); changed();
   if (MLC) await MLC.reset().catch(() => { });
+  if (MLB) await MLB.reset().catch(() => { });
   RUN = { kind: 'yt', prev: { tempo: TEMPO, loop: LOOP }, t0: Date.now() };
   SY.tr = null; SY.L0 = null; SY.corr = 0; SY.hist.length = 0;
   if (Math.abs(TEMPO - 1) > 0.001) { TEMPO = 1; applyTempo(); }
@@ -652,13 +694,13 @@ function stopAnalysis() {
 PR.redo = () => {   // refaire : on oublie la grille verrouillée et les corrections
   MANUAL = null; MULT = 1; METER = null; ADJ = 0; MLLOCK = null; REF = null; changed(); DIRTY = true;
   if (SRC && SRC.type === 'file' && window.__lastMono) PR.mlFile(window.__lastMono.mono, window.__lastMono.sr, window.__lastMono.dur);
-  else if (SRC && SRC.type === 'youtube') startAnalysis();
+  else if (SRC && (SRC.type === 'youtube' || SRC.type === 'tab')) { MLTOKEN++; MLA = null; MLSTATE = ''; MLBUSY = false; STAB.sig = null; STAB.n = 0; STAB.runs = 0; lvReset(); SY.tr = null; if (MLC) MLC.reset().catch(() => { }); if (MLB) MLB.reset().catch(() => { }); }
   PR.sync();
 };
-function keepTempo() { const m = MLA; if (!m) return; MLLOCK = Object.assign({}, m, { done: true }); changed(); DIRTY = true; PR.sync(); }
+function keepTempo() { const m = MLA; if (!m) return; MLLOCK = Object.assign({}, m, { done: true }); STAB.sig = null; STAB.n = 0; changed(); DIRTY = true; if (typeof autoSave === 'function') { try { autoSave(); } catch (e) { } } PR.sync(); }
 // fin de chanson atteinte pendant l'analyse, ou chanson presque entièrement entendue en écoutant normalement
 setInterval(() => {
-  if (!SRC || SRC.type !== 'youtube' || MLLOCK) return;
+  if (!SRC || SRC.type !== 'youtube' || (MLLOCK && !MLLOCK.partial)) return;
   const dur = P.dur(), t = P.time();
   if (RUN && RUN.kind === 'yt') {
     if (Math.abs(rateNow() - 1) > 0.02 && P.playing()) { try { ytp().setPlaybackRate(1); } catch (e) { } }
@@ -690,14 +732,15 @@ PR.sync = () => {
   else if (yt || tab) mode = 'idle';
   else if (file) mode = MLSTATE === 'error' ? 'dsp' : 'run';
   st.dataset.mode = mode;
-  $('m-analyze').hidden = !(mode === 'idle' && yt) && !(mode === 'dsp' && false);
+  $('m-analyze').hidden = true;
   $('m-prog').hidden = !(mode === 'run' || (mode === 'idle' && covered() > 1 && dur));
   $('m-cancel').hidden = !(mode === 'run' && RUN && RUN.kind === 'yt');
-  $('m-keep').hidden = !(mode === 'idle' && MLA);
+  $('m-keep').hidden = true;
   $('m-done').hidden = !(mode === 'lock' || mode === 'tap');
   let pct = 0, ptxt = '', note = '';
   if (mode === 'run') {
-    if (RUN && RUN.kind === 'yt') {
+    if (RUN && RUN.auto) { pct = DLP != null && DLP < 1 ? DLP : 1; ptxt = DLP != null && DLP < 1 ? `Téléchargement… ${Math.round(DLP * 100)} %` : 'Vérification…'; note = 'Le tempo est stable : vérification précise, puis il se fixe.'; }
+    else if (RUN && RUN.kind === 'yt') {
       pct = dur ? Math.min(1, covered() / dur) : 0; const left = dur ? dur * (1 - pct) : 0;
       ptxt = `Analyse… ${Math.round(pct * 100)} %`;
       if (DLP != null && DLP < 1) { ptxt += ` · téléchargement ${Math.round(DLP * 100)} %`; }
@@ -708,9 +751,9 @@ PR.sync = () => {
     }
   } else if (mode === 'idle') {
     pct = dur ? Math.min(1, covered() / dur) : 0; ptxt = `Écouté : ${Math.round(pct * 100)} %`;
-    if (yt) note = PENDING_RUN ? 'Active le son dans la petite fenêtre « Moteur audio » : l\'analyse commencera ensuite.'
-      : `La chanson jouera du début à la fin à vitesse normale${dur ? ' (' + fmtMs(dur) + ')' : ''}. Le métronome sera ensuite stable et enregistré avec la chanson.` + (g ? ' D\'ici là, le tempo est provisoire.' : '');
-    else note = g ? 'Tempo provisoire : il se précise pendant l\'écoute. Clique sur « Garder ce tempo » quand il te convient.' : 'Fais jouer la chanson : les temps apparaissent après une douzaine de secondes.';
+    note = !CAP ? 'Active le son transposé et fais jouer la chanson : le tempo s\'analyse pendant l\'écoute.'
+      : Math.abs((TEMPO || 1) - 1) > 0.02 ? 'L\'analyse du tempo écoute seulement à vitesse 100 %.'
+      : g ? 'Tempo provisoire : il se fixe tout seul dès qu\'il est sûr.' : 'Analyse du tempo pendant l\'écoute : les temps apparaissent après une douzaine de secondes.';
   } else if (mode === 'lock') {
     $('m-done-t').textContent = `Tempo analysé et verrouillé · ${Math.round(60 / g.period)} BPM · ${g.meter} temps`;
     note = (MULT !== 1 || METER || ADJ ? 'Avec tes corrections. ' : '') + (OPENED ? '' : 'Enregistre la chanson dans ta librairie (Fiche de la chanson) pour garder cette analyse.');
