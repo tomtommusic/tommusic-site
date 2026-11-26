@@ -5,6 +5,10 @@
 const TP = window.TonalityTempo;
 const PR = window.PR = {};
 PR._grid = () => grid();
+PR._bars = () => { const g = grid(); return g ? barsOf(g) : []; };
+PR._segs = () => LV.segs;
+PR._mlv = () => MLV;
+PR._ruler = () => { BR.key = ''; buildRuler(); };
 PR._stab = () => ({ dbg: STAB.dbg, n: STAB.n, sig: STAB.sig, busy: MLBUSY, st: MLSTATE, ns: LV.newSec, lock: !!MLLOCK, mla: MLA && MLA.beats.length });
 PR._t = { fresh: () => { MLTOKEN++; MLA = null; MLLOCK = null; REF = null; MLBUSY = false; lvReset(); changed(); return MLC ? MLC.reset() : null; }, run: () => { RUN = { kind: "yt", prev: null }; }, finish: () => finishRun(), raw: () => rawTempo() };
 
@@ -77,7 +81,7 @@ function mlPush(chunk, t0, rate, sr) {
   if (covHas(t0, t0 + chunk.length / sr * rate)) { LV.lastEnd = null; return; }   // déjà entendu (boucle, retour en arrière)
   // un saut dans la chanson ou un changement de fréquence : nouveau segment
   if (LV.lastEnd == null || Math.abs(t0 - LV.lastEnd) > 0.25 || sr !== LV.sr) {
-    mlFlush(); LV.seg++; LV.sr = sr; LV.segs.set(LV.seg, { pieces: [], a: 0 });
+    mlFlush(); LV.seg++; LV.sr = sr; LV.segs.set(LV.seg, { pieces: [], a: 0, audio: [], sr });
   }
   const sg = LV.segs.get(LV.seg), len = chunk.length / sr;
   const last = sg.pieces[sg.pieces.length - 1];
@@ -86,6 +90,7 @@ function mlPush(chunk, t0, rate, sr) {
   if (!last || last.rate !== rate || Math.abs(pred + (last.fix || 0) - t0) > 0.08) sg.pieces.push({ a: sg.a, t: t0, rate, err: [0] });
   else { last.err.push(t0 - pred); if (last.err.length > 400) last.err.splice(0, 200); last.fix = median(last.err); }
   sg.a += len; LV.lastEnd = t0 + len * rate; covAdd(t0, LV.lastEnd);
+  sg.audio.push(new Float32Array(chunk));   // gardé pour l'analyse des accords
   LV.pend.push(new Float32Array(chunk)); LV.pendLen += chunk.length; LV.newSec += len; LV.total += len;
   if (LV.pendLen >= sr) mlFlush();
   if (!PRELOAD) { PRELOAD = true; bigClient().load(onDl).then(() => { DLP = null; PR.sync(); }).catch(() => { }); }
@@ -155,6 +160,7 @@ async function finishRun() {
   PR.sync();
 }
 PR.reset = () => {
+  if (window.CH) CH.reset();
   STAB.sig = null; STAB.n = 0; STAB.runs = 0;
   TT = null; TANA = null; TSAVED = null; MANUAL = null; MULT = 1; METER = null; ADJ = 0; GRID = null; SCHED.clear(); COUNTING = false; TAPS.length = 0;
   MLTOKEN++; MLA = null; MLLOCK = null; MLSTATE = ''; MLPROG = 0; MLBUSY = false; RUN = null; REF = null; lvReset(); changed(); if (MLC) MLC.reset().catch(() => { }); if (MLB) MLB.reset().catch(() => { });
@@ -175,6 +181,7 @@ PR.save = () => {
   return {
     tempo: useDsp() && a ? { bpm: Math.round(a.bpm * 10) / 10, beats: a.beats.map(r2), d4: a.downbeat4, d3: a.downbeat3, mg: a.meterGuess, heard: Math.round((a.heard || 0) * 10) / 10 } : null,
     ml: m ? { beats: m.beats.map(r2), downs: m.downs.map(r2), heard: Math.round((m.heard || 0) * 10) / 10, done: !!m.done, partial: !!m.partial || undefined } : null,
+    chords: window.CH ? CH.save() : null,
     manual: MANUAL, mult: MULT, meter: METER, adj: ADJ
   };
 };
@@ -184,6 +191,7 @@ PR.load = p => {
   const m = p.ml && p.ml.beats && p.ml.beats.length >= 8 ? { beats: p.ml.beats, downs: p.ml.downs || [], heard: p.ml.heard || 0, done: !!p.ml.done, partial: !!p.ml.partial } : null;
   MLLOCK = m && m.done ? m : null; if (m && !m.done && !MLA) MLA = m;
   SY.corr = 0; SY.hist.length = 0;
+  if (window.CH) CH.load(p.chords);
   // plus de corrections manuelles : on se fie à l'analyse
   MANUAL = null; MULT = 1; METER = null; ADJ = 0; REF = null; changed(); PR.sync();
 };
@@ -590,7 +598,7 @@ function tap() {
 const BR = { key: '', cells: [], bars: [], drag: null, userScroll: 0, cur: -1 };
 function buildRuler() {
   const box = $('bars'), g = grid();
-  const key = g ? MLV + '|' + MULT + '|' + METER + '|' + ADJ + '|' + (MANUAL ? MANUAL.period + ':' + MANUAL.anchor : '') + '|' + Math.round(P.dur() || 0) : 'none';
+  const key = g ? MLV + '|' + MULT + '|' + METER + '|' + ADJ + '|' + (MANUAL ? MANUAL.period + ':' + MANUAL.anchor : '') + '|' + Math.round(P.dur() || 0) + '|' + (window.CH ? CH.key() : '') : 'none';
   if (key === BR.key) return;
   BR.key = key; box.textContent = ''; BR.cells = []; BR.cur = -1;
   if (!g) { BR.bars = []; return; }
@@ -598,7 +606,9 @@ function buildRuler() {
   for (const b of BR.bars) {
     const c = mk('button', 'bar', null, box); c.type = 'button'; c.dataset.k = b.n - 1;
     c.setAttribute('aria-label', 'Mesure ' + b.n);
-    mk('span', 'num', String(b.n), c);
+    const top = mk('span', 'num', String(b.n), c);
+    const sec = window.CH && CH.sectionAt(b); if (sec) { mk('b', 'sec', sec, top); c.classList.add('secstart'); }
+    const chd = window.CH ? CH.barText(b, g) : null; if (chd != null) mk('span', 'chd', chd, c);
     const dots = mk('span', 'dots', null, c);
     const nb = Math.max(1, Math.min(12, (idxAt(g, b.end - 0.01) - b.i) + 1));
     for (let k = 0; k < nb; k++) mk('i', k === 0 ? 'one' : '', null, dots);
@@ -782,6 +792,12 @@ PR.sync = () => {
   $('bars-empty').textContent = !SRC ? '' : yt && !MLA && !MLLOCK && !MANUAL ? 'Les mesures apparaîtront ici après l\'analyse du tempo (bouton « Analyser le tempo » dans le métronome).'
     : 'Les mesures apparaîtront ici dès que le tempo sera trouvé.';
   $('bars-info').textContent = g ? (g.source === 'live' ? 'Provisoire' : g.source === 'tap' ? 'Tempo tapé' : '🔒 Verrouillé') : '';
+  if (window.CH) {
+    const cs = CH.status(); $('ch-st').textContent = cs; $('ch-st').hidden = !cs;
+    $('bars-card').classList.toggle('withchords', CH.has());
+    $('ch-on').checked = CH.shown();
+    if (CH.has() && CAPO) $('bars-info').textContent += ` · formes pour capo ${CAPO}`;
+  }
   // --- boucle ---
   document.querySelectorAll('[data-snap]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.snap === SNAP)); b.disabled = b.dataset.snap !== 'off' && !g; });
   document.querySelectorAll('[data-bars]').forEach(b => b.disabled = !g);
@@ -801,6 +817,7 @@ PR.sync = () => {
 
 /* ---------- branchements ---------- */
 const fix = f => () => { f(); changed(); SCHED.clear(); DIRTY = true; PR.sync(); };
+$('ch-on').onchange = e => { if (window.CH) CH.setShow(e.target.checked); };
 $('m-on').onclick = async () => {
   MET.on = !MET.on;
   if (MET.on) { try { await ensureCtx(); } catch (e) { } SCHED.clear(); lastMt = null; }

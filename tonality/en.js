@@ -166,6 +166,7 @@ t:{
 "Le tempo apparaît après quelques secondes d'écoute. Tu peux aussi le taper.":"The tempo appears after a few seconds of listening. You can also tap it.",
 "Active le son transposé et fais jouer la chanson : le tempo s'analyse pendant l'écoute.":"Turn on transposed sound and play the song: the tempo is analyzed as you listen.","L'analyse du tempo écoute seulement à vitesse 100 %.":"The tempo analysis only listens at 100% speed.","Tempo provisoire : il se fixe tout seul dès qu'il est sûr.":"Provisional tempo: it locks by itself as soon as it's certain.","Analyse du tempo pendant l'écoute : les temps apparaissent après une douzaine de secondes.":"Tempo analysis while you listen: beats appear after about twelve seconds.",
 "Vérification…":"Checking…","Le tempo est stable : vérification précise, puis il se fixe.":"The tempo is stable: precise check, then it locks.",
+"📏 Mesures et accords":"📏 Bars and chords"," Accords":"Chords","Accords":"Chords","Accords : après la grille des temps":"Chords: after the beat grid",
 "Tempo original":"Original tempo","tempo détecté":"detected tempo","tempo tapé":"tapped tempo","tempo enregistré":"saved tempo",
 "tempo détecté (se précise pendant l'écoute)":"detected tempo (gets more precise as you listen)",
 "temps et mesures trouvés par l'IA":"beats and bars found by AI","temps trouvés par l'IA (se précisent pendant l'écoute)":"beats found by AI (more precise as you listen)",
@@ -179,6 +180,7 @@ t:{
 "Pour aimanter la boucle aux temps, il faut le tempo : fais jouer la chanson quelques secondes (ou tape le tempo).":"To snap the loop to the beats, Tonality needs the tempo: play the song for a few seconds (or tap the tempo)."
 },
 re:[
+[/^Accords : analyse… (\d+) %$/,'Chords: analyzing… $1%'],[/^🔒 Verrouillé · formes pour capo (\d+)$/,'🔒 Locked · shapes for capo $1'],[/^Provisoire · formes pour capo (\d+)$/,'Provisional · shapes for capo $1'],
 [/^Téléchargement… (\d+) %$/,'Downloading… $1%'],[/^Analyse… (\d+) % · téléchargement (\d+) %$/,'Analyzing… $1% · downloading $2%'],
 [/^correction actuelle : ([+−])(\d+) ms$/,'current correction: $1$2 ms'],
 [/^Analyse… (\d+) %$/,'Analyzing… $1%'],[/^Écouté : (\d+) %$/,'Heard: $1%'],[/^(\d+) temps par mesure$/,'$1 beats per bar'],

@@ -464,6 +464,18 @@ details.adv{border-radius:16px;background:#fbfefc}
 #fiche-card .field input{padding:6px 10px}
 #fiche-card #save{padding:7px 12px}
 #fiche-card > .note{display:none}
+/* accords dans la grille des mesures (moteur de Chart It) */
+.barsbox .cardhead{gap:10px;flex-wrap:wrap}
+.barsbox .cardhead h3{margin-right:auto}
+.ch-on{font-size:13px;font-weight:700}
+.ch-st{margin:0;font-weight:700;color:var(--deep)}
+.barsbox.withchords .bars{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));max-height:420px;gap:4px}
+.barsbox.withchords .bars .bar{height:58px;padding:4px 7px;justify-content:space-between}
+.bars .bar .chd{font-size:14px;font-weight:800;line-height:1.15;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:-.01em}
+.bars .bar .num{display:flex;align-items:center;gap:5px}
+.bars .bar .sec{font-size:10.5px;font-weight:900;color:#fff;background:var(--deep);border-radius:4px;padding:0 4px;line-height:15px}
+.bars .bar.secstart{border-left-width:3px;border-left-color:var(--deep)}
+.bars .bar.inloop.secstart{border-left-color:var(--accent-hi)}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -760,7 +772,8 @@ details.adv{border-radius:16px;background:#fbfefc}
           <div class="opts"><label><input type="checkbox" id="o-countin"><span>Décompte d'une mesure avant chaque reprise de la boucle</span></label></div>
             </div>
             <div class="barsbox" id="bars-card" hidden>
-        <div class="cardhead"><h3>📏 Mesures</h3><span class="note" id="bars-info"></span></div>
+        <div class="cardhead"><h3>📏 Mesures et accords</h3><span class="note" id="bars-info"></span><label class="chk ch-on"><input type="checkbox" id="ch-on" checked> Accords</label></div>
+        <p class="note ch-st" id="ch-st" hidden></p>
         <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
         <p class="empty-b" id="bars-empty"></p>
         <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
@@ -846,7 +859,7 @@ details.adv{border-radius:16px;background:#fbfefc}
   </main>
 </div>
 
-<script src="en.js?v=12"></script>
+<script src="en.js?v=13"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -865,6 +878,8 @@ details.adv{border-radius:16px;background:#fbfefc}
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=2"></script>
 <script src="app.js?v=12"></script>
-<script src="practice.js?v=13"></script>
+<script src="practice.js?v=14"></script>
+<script src="chart-engine.js?v=1"></script>
+<script src="chords.js?v=1"></script>
 </body>
 </html>
