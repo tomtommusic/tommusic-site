@@ -70,10 +70,38 @@
   CH.sectionAt = bar => { if (!SHOW) return null; const s = SECS.find(x => Math.abs(x.t - bar.t) < 0.15); return s ? s.label : null; };
   CH.status = () => {
     if (!SHOW) return '';
-    if (STATE === 'extract') return `Accords : analyse… ${Math.round(PROG * 100)} %`;
+    if (STATE === 'extract') return CMDL != null ? `Accords : téléchargement du réseau… ${Math.round(CMDL * 100)} %` : `Accords : analyse… ${Math.round(PROG * 100)} %`;
     if (STATE === 'wait') return 'Accords : après la grille des temps';
     return '';
   };
+
+  /* ---------- réseau d'accords ChordMini (fil de calcul) ---------- */
+  const CM_W = 0.15;    // poids de l'avis du réseau (mesuré sur GuitarSet : 78,6 % → 82,3 % d'accords justes)
+  let CMW = null, cmSeq = 0, CMDL = null; const cmPend = new Map();
+  const HERE = (document.currentScript && document.currentScript.src) ? new URL('.', document.currentScript.src).href : new URL('./', location.href).href;
+  function cm() {
+    if (CMW) return CMW;
+    if (!window.Worker || !window.DecompressionStream) return null;
+    CMW = new Worker(HERE + 'chordml-worker.js?v=1');
+    CMW.onmessage = e => { const m = e.data, p = cmPend.get(m.id); if (!p) return; if (m.progress != null) { if (m.dl) { CMDL = m.progress < 1 ? m.progress : null; tickUI(); } else p.onProg && p.onProg(m.progress); return; } cmPend.delete(m.id); CMDL = null; m.ok ? p.res(m.result) : p.rej(new Error(m.error)); };
+    CMW.onerror = () => { for (const p of cmPend.values()) p.rej(new Error('worker')); cmPend.clear(); CMW = null; };
+    return CMW;
+  }
+  const cmRun = (y, onProg) => new Promise((res, rej) => { const w = cm(); if (!w) return rej(new Error('indisponible')); const id = ++cmSeq; cmPend.set(id, { res, rej, onProg }); const c = new Float32Array(y); w.postMessage({ id, type: 'analyze', base: HERE, y: c }, [c.buffer]); });
+  const CMQ = { min: 'min', '': 'maj', '7': '7', maj7: 'maj7', min7: 'm7', dim: 'dim', hdim7: 'm7b5', sus4: 'sus4', sus2: 'sus2', min6: 'm6', maj6: '6', dim7: 'dim7', aug: 'aug' };
+  const CMPC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function cmIndex(vocab) { const idx = {}; vocab.forEach((v, i) => { if (v === 'N' || v === 'X') return; const [r, q] = v.split(':'); idx[((CMPC[r[0]] + (r[1] === '#' ? 1 : r[1] === 'b' ? -1 : 0)) % 12 + 12) % 12 + ':' + (CMQ[q || ''] || q)] = i; }); return { idx, N: vocab.indexOf('N') }; }
+  // probabilités du réseau pour chaque temps (moyenne des logits sur la durée du temps, puis softmax)
+  function cmBeats(cmr, xs, dur) {
+    const T = cmr.frames, L = cmr.logits, fd = cmr.frame, K = 170;
+    return xs.map((x, i) => {
+      const e = i + 1 < xs.length ? xs[i + 1] : Math.min(dur, x + 0.5), i0 = Math.max(0, Math.min(T - 1, Math.floor(x / fd))), i1 = Math.min(T, Math.max(i0 + 1, Math.floor(e / fd)));
+      const m = new Float64Array(K); for (let f = i0; f < i1; f++) for (let k = 0; k < K; k++) m[k] += L[f * K + k];
+      let mx = -Infinity; for (let k = 0; k < K; k++) { m[k] /= (i1 - i0); if (m[k] > mx) mx = m[k]; }
+      let sum = 0; for (let k = 0; k < K; k++) { m[k] = Math.exp(m[k] - mx); sum += m[k]; } for (let k = 0; k < K; k++) m[k] /= sum;
+      return m;
+    });
+  }
 
   /* ---------- audio → traits (une seule fois par portion de chanson) ---------- */
   async function to22k(x, sr) {
@@ -86,8 +114,9 @@
   async function extractFile() {
     const m = window.__lastMono; if (!m) return null;
     const x = await to22k(m.mono, m.sr);
+    const cmP = cmRun(x).catch(e => { console.warn('Tonality : réseau d\'accords indisponible', e); return null; });
     const feat = await E.extract(x, p => { PROG = p; tickUI(); });
-    return [{ feat, toAudio: t => t, toMedia: a => a, t0: 0, t1: feat.duration }];
+    return [{ feat, cm: await cmP, toAudio: t => t, toMedia: a => a, t0: 0, t1: feat.duration }];
   }
   async function extractLive() {
     const out = [], segs = PR._segs();
@@ -99,12 +128,14 @@
       for (const c of sg.audio) { x.set(c, o); o += c.length; }
       const y = await to22k(x, sg.sr);
       const base = done, len = sg.a;
+      const cmP = cmRun(y).catch(e => { console.warn('Tonality : réseau d\'accords indisponible', e); return null; });
       const feat = await E.extract(y, p => { PROG = (base + p * len) / total; tickUI(); });
+      const cmr = await cmP;
       done += len;
       const pcs = sg.pieces.map(p => ({ a: p.a, t: p.t + (p.fix || 0) }));
       const toMedia = a => { let p = pcs[0]; for (const q of pcs) { if (q.a <= a) p = q; else break; } return p.t + (a - p.a); };
       const toAudio = t => { let p = pcs[0]; for (const q of pcs) { if (q.t <= t) p = q; else break; } return p.a + (t - p.t); };
-      out.push({ feat, toAudio, toMedia, t0: toMedia(0), t1: toMedia(feat.duration) });
+      out.push({ feat, cm: cmr, toAudio, toMedia, t0: toMedia(0), t1: toMedia(feat.duration) });
     }
     return out;
   }
@@ -117,7 +148,13 @@
       const idx = []; for (let i = 0; i < g.beats.length; i++) { const t = g.beats[i]; if (t >= F.t0 + 0.05 && t < F.t1 - 0.1) idx.push(i); }
       if (idx.length < 8) continue;
       const xs = idx.map(i => F.toAudio(g.beats[i]));
-      const dec = E.decode(F.feat, xs, { vocab: OPTS.vocab, minBeats: OPTS.detail, inversions: OPTS.inv });
+      let extra = null, extraNC = null;
+      if (F.cm) {
+        const P = cmBeats(F.cm, xs, F.feat.duration), ix = F.cmIx || (F.cmIx = cmIndex(F.cm.vocab));
+        extra = (b, ch) => { const i = ix.idx[ch.r + ':' + ch.q]; return i == null ? 0 : CM_W * P[b][i]; };
+        extraNC = b => ix.N >= 0 ? CM_W * P[b][ix.N] : 0;
+      }
+      const dec = E.decode(F.feat, xs, { vocab: OPTS.vocab, minBeats: OPTS.detail, inversions: OPTS.inv, extra, extraNC });
       let phase = idx.findIndex(i => g.pos[i] === 0); if (phase < 0) phase = 0; phase %= g.meter;
       const tidy = E.tidyChords(dec.chords, g.meter, phase, { passing: OPTS.detail > 1 });
       idx.forEach((i, j) => list.push({ t: g.beats[i], c: tidy[j] }));

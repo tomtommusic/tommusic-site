@@ -308,9 +308,11 @@
         if (ch.n > 3) s -= 0.025;                    // prudence pour les accords à 4 sons
         if (ch.q !== 'maj' && ch.q !== 'min' && ch.n === 3) s -= 0.02;
         if (dia.has(ch.r + ':' + ch.q)) s += 0.035;  // accords de la tonalité
+        if (opts.extra) s += opts.extra(b, ch);   // avis d'un autre modèle (réseau de neurones), si fourni
         row[c] = s;
       }
       row[NC] = be[b] < 0.12 * med ? 2 : 0.25;      // « pas d'accord »
+      if (opts.extraNC) row[NC] += opts.extraNC(b);
       S.push(row);
     }
     // Viterbi (rester sur le même accord est favorisé)
