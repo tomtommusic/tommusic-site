@@ -50,6 +50,9 @@
   CH.barText = (bar, g) => {
     if (!SHOW || !LIST.length) return null;
     const out = []; let last = null;
+    // seulement les changements : l'accord qui continue de la mesure d'avant n'est pas répété
+    // (sauf au début d'une section, pour qu'on s'y retrouve)
+    if (!CH.sectionAt(bar)) for (let i = bar.i - 1; i >= 0 && i >= bar.i - 16; i--) { const c = chordAt(g.beats[i]); if (c) { last = E.chordKey(c); break; } }
     for (let i = bar.i; i < g.beats.length && g.beats[i] < bar.end - 0.02; i++) {
       const c = chordAt(g.beats[i]); if (!c) continue;
       const k = E.chordKey(c); if (k !== last) { out.push(chordName(c, g.beats[i])); last = k; }
