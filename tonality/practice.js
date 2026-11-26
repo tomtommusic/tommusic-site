@@ -75,7 +75,9 @@ function mlFlush() {
   bigClient().append(LV.seg, a, LV.sr).catch(() => { });
 }
 function mlPush(chunk, t0, rate, sr) {
-  if (!ML_OK || (MLLOCK && !MLLOCK.partial)) return;   // grille partielle : on continue d'écouter pour la vérifier à la fin
+  // tempo déjà verrouillé : on n'écoute plus pour les temps, mais on garde le son pour les accords s'il en manque
+  const tempoDone = !ML_OK || (MLLOCK && !MLLOCK.partial), forChords = !!(window.CH && CH.wantsAudio());
+  if (tempoDone && !forChords) return;
   // l'IA reconnaît mal les temps d'un son ralenti ou accéléré : on n'écoute qu'à vitesse normale
   if (Math.abs(rate - 1) > 0.02) { LV.lastEnd = null; return; }
   if (covHas(t0, t0 + chunk.length / sr * rate)) { LV.lastEnd = null; return; }   // déjà entendu (boucle, retour en arrière)
@@ -91,6 +93,7 @@ function mlPush(chunk, t0, rate, sr) {
   else { last.err.push(t0 - pred); if (last.err.length > 400) last.err.splice(0, 200); last.fix = median(last.err); }
   sg.a += len; LV.lastEnd = t0 + len * rate; covAdd(t0, LV.lastEnd);
   sg.audio.push(new Float32Array(chunk));   // gardé pour l'analyse des accords
+  if (tempoDone) return;
   LV.pend.push(new Float32Array(chunk)); LV.pendLen += chunk.length; LV.newSec += len; LV.total += len;
   if (LV.pendLen >= sr) mlFlush();
   if (!PRELOAD) { PRELOAD = true; bigClient().load(onDl).then(() => { DLP = null; PR.sync(); }).catch(() => { }); }

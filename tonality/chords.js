@@ -51,6 +51,8 @@
   function chordAt(t) { const e = near(EDITS, t); if (e) return e.c; const x = near(LIST, t); return x ? x.c : null; }
   CH.key = () => [VER, SHOW ? 1 : 0, ST, CAPO, LANG()].join(':');
   CH.has = () => SHOW && LIST.length > 0;
+  // faut-il encore du son ? (pas si les accords viennent de la librairie, déjà complets)
+  CH.wantsAudio = () => SHOW && !(LOADED && FINAL && LIST.length);
   function barChords(bar, g) {   // accords de la mesure (temps → accord), sans regroupement
     const out = []; for (let i = bar.i; i < g.beats.length && g.beats[i] < bar.end - 0.02; i++) out.push({ i, t: g.beats[i], c: chordAt(g.beats[i]) });
     return out;
@@ -72,6 +74,7 @@
     if (!SHOW) return '';
     if (STATE === 'extract') return CMDL != null ? `Accords : téléchargement du réseau… ${Math.round(CMDL * 100)} %` : `Accords : analyse… ${Math.round(PROG * 100)} %`;
     if (STATE === 'wait') return 'Accords : après la grille des temps';
+    if (STATE === 'listen') return 'Accords : fais jouer la chanson, ils apparaissent après une trentaine de secondes';
     return '';
   };
 
@@ -182,6 +185,7 @@
     // traits audio : au départ, puis quand beaucoup de nouvel audio a été entendu (ou à la vérification finale)
     const needFeat = !FEATS ? !(LOADED && live) || heard > FEATAT + 30
       : live && (heard > FEATAT + 45 || (lockFinal && !FINAL && heard > FEATAT + 5));
+    if (!FEATS && !LIST.length && heard <= 15) { STATE = live ? 'listen' : STATE; tickUI(); return; }
     BUSY = true;
     try {
       if (needFeat && heard > 15) {
