@@ -167,6 +167,7 @@ t:{
 "Active le son transposé et fais jouer la chanson : le tempo s'analyse pendant l'écoute.":"Turn on transposed sound and play the song: the tempo is analyzed as you listen.","L'analyse du tempo écoute seulement à vitesse 100 %.":"The tempo analysis only listens at 100% speed.","Tempo provisoire : il se fixe tout seul dès qu'il est sûr.":"Provisional tempo: it locks by itself as soon as it's certain.","Analyse du tempo pendant l'écoute : les temps apparaissent après une douzaine de secondes.":"Tempo analysis while you listen: beats appear after about twelve seconds.",
 "Vérification…":"Checking…","Le tempo est stable : vérification précise, puis il se fixe.":"The tempo is stable: precise check, then it locks.",
 "📏 Mesures et accords":"📏 Bars and chords"," Accords":"Chords","Accords":"Chords","Accords : après la grille des temps":"Chords: after the beat grid",
+"✏️ Corriger les accords":"✏️ Fix chords","✓ Terminer les corrections":"✓ Done fixing","🖨️ Imprimer / PDF":"🖨️ Print / PDF","⚙️ Options des accords":"⚙️ Chord options","Majeurs et mineurs":"Major and minor","+ accords de 7e":"+ 7th chords","+ dim, ø, sus":"+ dim, ø, sus","Détail":"Detail","Simplifié (au moins 4 temps)":"Simplified (at least 4 beats)","Normal (au moins 2 temps)":"Normal (at least 2 beats)","Détaillé (accords de passage)":"Detailed (passing chords)"," Repérer les renversements (Do/Mi, G/B…)":"Detect inversions (C/E, G/B…)","Repérer les renversements (Do/Mi, G/B…)":"Detect inversions (C/E, G/B…)","Enregistrer":"Save","Annuler":"Cancel","Remettre l'analyse":"Restore the analysis","Un accord par moitié ou par temps : « Sol Ré/Fa♯ », « Do Do Fa Sol ». N.C. = pas d'accord.":"One chord per half or per beat: “G D/F♯”, “C C F G”. N.C. = no chord.","La fenêtre d'impression a été bloquée : autorise les fenêtres pour tommusic.ca.":"The print window was blocked: allow pop-ups for tommusic.ca.",
 "Tempo original":"Original tempo","tempo détecté":"detected tempo","tempo tapé":"tapped tempo","tempo enregistré":"saved tempo",
 "tempo détecté (se précise pendant l'écoute)":"detected tempo (gets more precise as you listen)",
 "temps et mesures trouvés par l'IA":"beats and bars found by AI","temps trouvés par l'IA (se précisent pendant l'écoute)":"beats found by AI (more precise as you listen)",
@@ -180,6 +181,7 @@ t:{
 "Pour aimanter la boucle aux temps, il faut le tempo : fais jouer la chanson quelques secondes (ou tape le tempo).":"To snap the loop to the beats, Tonality needs the tempo: play the song for a few seconds (or tap the tempo)."
 },
 re:[
+[/^Mesure (\d+) · (\d+) temps$/,'Bar $1 · $2 beats'],[/^« (.+) » n'est pas un accord reconnu\.$/,'“$1” is not a recognized chord.'],
 [/^Accords : analyse… (\d+) %$/,'Chords: analyzing… $1%'],[/^🔒 Verrouillé · formes pour capo (\d+)$/,'🔒 Locked · shapes for capo $1'],[/^Provisoire · formes pour capo (\d+)$/,'Provisional · shapes for capo $1'],
 [/^Téléchargement… (\d+) %$/,'Downloading… $1%'],[/^Analyse… (\d+) % · téléchargement (\d+) %$/,'Analyzing… $1% · downloading $2%'],
 [/^correction actuelle : ([+−])(\d+) ms$/,'current correction: $1$2 ms'],

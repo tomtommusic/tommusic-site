@@ -476,6 +476,20 @@ details.adv{border-radius:16px;background:#fbfefc}
 .bars .bar .sec{font-size:10.5px;font-weight:900;color:#fff;background:var(--deep);border-radius:4px;padding:0 4px;line-height:15px}
 .bars .bar.secstart{border-left-width:3px;border-left-color:var(--deep)}
 .bars .bar.inloop.secstart{border-left-color:var(--accent-hi)}
+/* outils des accords : corriger, imprimer, options */
+.barsbox{position:relative}
+.ch-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.ch-tools .ch-opts{flex:1 1 220px;padding:6px 12px}
+.ch-tools .ch-opts summary{font-size:13.5px}
+#ch-edit[aria-pressed="true"]{background:var(--deep);color:#fff;border-color:var(--deep)}
+.barsbox.editing .bars .bar{cursor:text;border-style:dashed}
+.barsbox.editing .bars .bar:hover{border-style:solid;border-color:var(--deep)}
+.bars .bar .chd.edited{text-decoration:underline dotted 2px;text-underline-offset:3px}
+.ch-editor{position:absolute;z-index:30;width:300px;max-width:calc(100% - 8px);background:#fff;border:2px solid var(--deep);border-radius:14px;padding:10px 12px;display:grid;gap:6px;box-shadow:0 18px 40px -18px rgba(6,70,50,.55)}
+.ch-editor label{font-size:12.5px;font-weight:800;color:var(--muted)}
+.ch-editor input{font:inherit;font-size:17px;font-weight:800;padding:7px 10px;border:1.5px solid var(--line-hi);border-radius:10px}
+.ch-editor .note{margin:0;font-size:12px}
+.ch-editor .status:empty{display:none}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tommusic.ca/tonality/">
@@ -774,6 +788,20 @@ details.adv{border-radius:16px;background:#fbfefc}
             <div class="barsbox" id="bars-card" hidden>
         <div class="cardhead"><h3>📏 Mesures et accords</h3><span class="note" id="bars-info"></span><label class="chk ch-on"><input type="checkbox" id="ch-on" checked> Accords</label></div>
         <p class="note ch-st" id="ch-st" hidden></p>
+        <div class="ch-tools" id="ch-tools" hidden>
+          <button class="btn small" type="button" id="ch-edit" aria-pressed="false">✏️ Corriger les accords</button>
+          <button class="btn small" type="button" id="ch-print">🖨️ Imprimer / PDF</button>
+          <details class="adv ch-opts">
+            <summary>⚙️ Options des accords</summary>
+            <div class="in">
+              <div class="row2"><label class="lab" for="ch-vocab">Accords</label>
+                <select class="sel" id="ch-vocab"><option value="simple">Majeurs et mineurs</option><option value="sept">+ accords de 7e</option><option value="etendu">+ dim, ø, sus</option></select></div>
+              <div class="row2"><label class="lab" for="ch-detail">Détail</label>
+                <select class="sel" id="ch-detail"><option value="4">Simplifié (au moins 4 temps)</option><option value="2">Normal (au moins 2 temps)</option><option value="1">Détaillé (accords de passage)</option></select></div>
+              <label class="chk"><input type="checkbox" id="ch-inv"> Repérer les renversements (Do/Mi, G/B…)</label>
+            </div>
+          </details>
+        </div>
         <div class="bars" id="bars" aria-label="Mesures de la chanson"></div>
         <p class="empty-b" id="bars-empty"></p>
         <p class="note">Clique sur une mesure pour y aller. <b>Glisse sur plusieurs mesures</b> pour les faire jouer en boucle.</p>
@@ -859,7 +887,7 @@ details.adv{border-radius:16px;background:#fbfefc}
   </main>
 </div>
 
-<script src="en.js?v=13"></script>
+<script src="en.js?v=14"></script>
 <script src="../i18n.js?v=1"></script>
 <script src="vendor/SignalsmithStretch.js?v=1.3.2"></script>
 
@@ -878,8 +906,8 @@ details.adv{border-radius:16px;background:#fbfefc}
 <script src="tempo.js?v=1"></script>
 <script src="beatml.js?v=2"></script>
 <script src="app.js?v=12"></script>
-<script src="practice.js?v=14"></script>
+<script src="practice.js?v=15"></script>
 <script src="chart-engine.js?v=1"></script>
-<script src="chords.js?v=1"></script>
+<script src="chords.js?v=2"></script>
 </body>
 </html>

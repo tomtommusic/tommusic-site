@@ -608,7 +608,7 @@ function buildRuler() {
     c.setAttribute('aria-label', 'Mesure ' + b.n);
     const top = mk('span', 'num', String(b.n), c);
     const sec = window.CH && CH.sectionAt(b); if (sec) { mk('b', 'sec', sec, top); c.classList.add('secstart'); }
-    const chd = window.CH ? CH.barText(b, g) : null; if (chd != null) mk('span', 'chd', chd, c);
+    const chd = window.CH ? CH.barText(b, g) : null; if (chd != null) { const ce = mk('span', 'chd', chd, c); if (CH.isEdited(b, g)) ce.classList.add('edited'); }
     const dots = mk('span', 'dots', null, c);
     const nb = Math.max(1, Math.min(12, (idxAt(g, b.end - 0.01) - b.i) + 1));
     for (let k = 0; k < nb; k++) mk('i', k === 0 ? 'one' : '', null, dots);
@@ -657,6 +657,7 @@ const endDrag = e => {
   if (!BR.drag) return; const d = BR.drag; BR.drag = null;
   const b0 = BR.bars[Math.min(d.k0, d.k1)], b1 = BR.bars[Math.max(d.k0, d.k1)];
   if (!b0) return;
+  if (!d.moved && window.CH && CH.editing()) { const g = grid(); CH.edit(b0, g, BR.cells[d.k0]); paintRuler(null); return; }   // mode correction : on modifie la mesure
   if (d.moved) setLoop(b0.t, b1.end, true);
   else if (e.shiftKey && A != null) { const a = Math.min(A, b0.t), z = Math.max(B || 0, b0.end); setLoop(a, z, false); }
   else {
@@ -793,6 +794,9 @@ PR.sync = () => {
     : 'Les mesures apparaîtront ici dès que le tempo sera trouvé.';
   $('bars-info').textContent = g ? (g.source === 'live' ? 'Provisoire' : g.source === 'tap' ? 'Tempo tapé' : '🔒 Verrouillé') : '';
   if (window.CH) {
+    $('ch-tools').hidden = !CH.has(); $('ch-edit').setAttribute('aria-pressed', String(CH.editing()));
+    $('ch-edit').textContent = CH.editing() ? '✓ Terminer les corrections' : '✏️ Corriger les accords';
+    $('bars-card').classList.toggle('editing', CH.editing());
     const cs = CH.status(); $('ch-st').textContent = cs; $('ch-st').hidden = !cs;
     $('bars-card').classList.toggle('withchords', CH.has());
     $('ch-on').checked = CH.shown();
